@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 
+import org.opencv.dnn.Dnn;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
