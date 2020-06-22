@@ -16,6 +16,10 @@ public abstract class BaseLoaderCallback implements LoaderCallbackInterface {
         mAppContext = AppContext;
     }
 
+    public BaseLoaderCallback() {
+
+    }
+
     public void onManagerConnected(int status)
     {
         switch (status)
