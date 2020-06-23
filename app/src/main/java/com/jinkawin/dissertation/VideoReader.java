@@ -1,12 +1,16 @@
 package com.jinkawin.dissertation;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.jcodec.api.FrameGrab;
 import org.jcodec.api.JCodecException;
+import org.jcodec.common.AndroidUtil;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.model.Picture;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,12 +33,12 @@ public class VideoReader {
      * @param resId   R.raw.{id}
      * @return ArrayList<Picture>
      */
-    public ArrayList<Picture> readVideo(int resId){
+    public ArrayList<Mat> readVideo(int resId, String filename){
         FileUtility fileUtility = new FileUtility(this.context);
-        ArrayList<Picture> pictures = new ArrayList<>();
+        ArrayList<Mat> pictures = new ArrayList<>();
         Picture frame;
 
-        String filePath = fileUtility.readAndCopyFile(R.raw.video_6, "video_6.mp4");
+        String filePath = fileUtility.readAndCopyFile(resId, filename);
         File file = new File(filePath);
 
         try {
@@ -43,7 +47,13 @@ public class VideoReader {
 
             // For each frame in video
             while(null != (frame = frameGrab.getNativeFrame())){
-                pictures.add(frame);
+
+                // Convert Picture -> Bitmap -> Mat
+                Bitmap bitmap = AndroidUtil.toBitmap(frame);
+                Mat picture = new Mat();
+                Utils.bitmapToMat(bitmap, picture);
+
+                pictures.add(picture);
                 Log.i(TAG, "Height: " + frame.getHeight() + ", Width: " + frame.getWidth());
             }
         } catch (FileNotFoundException fe){

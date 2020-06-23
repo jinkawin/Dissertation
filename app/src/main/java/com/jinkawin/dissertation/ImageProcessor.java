@@ -3,6 +3,7 @@ package com.jinkawin.dissertation;
 import android.content.Context;
 import android.util.Log;
 
+import org.jcodec.common.model.Picture;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
@@ -35,7 +36,7 @@ public class ImageProcessor {
         this._loadOpenCV();
     }
 
-    public void process(){
+    public void process(Picture picture){
     }
 
     /**
