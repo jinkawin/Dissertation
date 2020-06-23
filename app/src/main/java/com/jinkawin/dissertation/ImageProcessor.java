@@ -9,10 +9,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -30,11 +27,24 @@ public class ImageProcessor {
     private List<String> layerNetwork;
     private List<String> labels;
 
+
+    public ImageProcessor(Context context){
+        this.context = context;
+        this.labels = this._readLabels(R.raw.coco_names);
+
+        this._loadOpenCV();
+    }
+
+    public void process(){
+    }
+
+    /**
+     * Callback when OpenCV libraries are loaded.
+     */
     private BaseLoaderCallback blCallback = new BaseLoaderCallback() {
         @Override
         public void onManagerConnected(int status) {
             if(status == LoaderCallbackInterface.SUCCESS){
-
                 Log.i(TAG, "callback success");
                 _setupNetwork();
             }else{
@@ -44,13 +54,9 @@ public class ImageProcessor {
         }
     };
 
-    public ImageProcessor(Context context){
-        this.context = context;
-        this.labels = this._readLabels(R.raw.coco_names);
-
-        this._loadOpenCV();
-    }
-
+    /**
+     * Load OpenCV libraries (version 3.4.0)
+     */
     private void _loadOpenCV(){
         // If OpenCV's libraries are not loaded
         if(!OpenCVLoader.initDebug()){
@@ -64,43 +70,26 @@ public class ImageProcessor {
         }
     }
 
+    /**
+     * Load config file and model file to the network
+     */
     private void _setupNetwork(){
+        FileUtility fileUtility = new FileUtility(this.context);
+
         // Read and copy files to internal storage
-        String weightPath = this._readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
-        String configUri = this._readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
+        String weightPath = fileUtility.readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
+        String configUri = fileUtility.readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
 
         Log.i(TAG, "_setupNetwork");
         this.network = Dnn.readNetFromDarknet(configUri, weightPath);
         this.layerNetwork = this.network.getLayerNames();
     }
 
-    // https://docs.opencv.org/3.4/d0/d6c/tutorial_dnn_android.html
-    private String _readAndCopyFile(int resId, String fileName) {
-        String filePath = "";
-        BufferedInputStream bis;
-        try {
-            bis = new BufferedInputStream(this.context.getResources().openRawResource(resId));
-            byte data[] = new byte[bis.available()];
-
-            // Read file
-            bis.read(data);
-            bis.close();
-
-            // Create copy to internal storage
-            File file = new File(this.context.getFilesDir(), fileName);
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(data);
-            fos.close();
-
-            filePath = file.getAbsolutePath();
-
-        } catch (IOException e) {
-            Log.e(TAG, "Fail to read file");
-        }
-
-        return filePath;
-    }
-
+    /**
+     * Read all label (classification) classes
+     * @param resId R.raw.{id}
+     * @return List<String> list of labels
+     */
     private List<String> _readLabels(int resId){
         BufferedReader br = new BufferedReader(new InputStreamReader(this.context.getResources().openRawResource(resId)));
 
