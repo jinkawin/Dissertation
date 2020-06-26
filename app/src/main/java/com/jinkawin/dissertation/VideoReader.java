@@ -20,7 +20,7 @@ import java.util.ArrayList;
 public class VideoReader {
 
     public static final String TAG = "VideoReader";
-    public static final String PATH_RAW = "android.resource://com.jinkawin.dissertation/raw/";
+    private static final String PATH_RAW = "android.resource://com.jinkawin.dissertation/raw/";
 
     private Context context;
 
@@ -35,7 +35,7 @@ public class VideoReader {
      */
     public ArrayList<Mat> readVideo(int resId, String filename){
         FileUtility fileUtility = new FileUtility(this.context);
-        ArrayList<Mat> pictures = new ArrayList<>();
+        ArrayList<Mat> mats = new ArrayList<>();
         Picture frame;
 
         String filePath = fileUtility.readAndCopyFile(resId, filename);
@@ -48,13 +48,12 @@ public class VideoReader {
             // For each frame in video
             while(null != (frame = frameGrab.getNativeFrame())){
 
-                // Convert Picture -> Bitmap -> Mat
+                // Convert Picture -> Bitmap -> Mat (Video container in OpenCV)
                 Bitmap bitmap = AndroidUtil.toBitmap(frame);
-                Mat picture = new Mat();
-                Utils.bitmapToMat(bitmap, picture);
+                Mat mat = new Mat();
+                Utils.bitmapToMat(bitmap, mat);
 
-                pictures.add(picture);
-                Log.i(TAG, "Height: " + frame.getHeight() + ", Width: " + frame.getWidth());
+                mats.add(mat);
             }
         } catch (FileNotFoundException fe){
             Log.e(TAG, "File not found");
@@ -64,7 +63,7 @@ public class VideoReader {
             Log.e(TAG, "JCode Exception");
         }
 
-        return pictures;
+        return mats;
     }
 
 }
