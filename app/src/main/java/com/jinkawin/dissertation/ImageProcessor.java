@@ -103,7 +103,6 @@ public class ImageProcessor {
      *
      */
     private void getResult(ArrayList<Mat> layerOutput, Mat frame) {
-        ArrayList<Double> scores = new ArrayList<>();
         ArrayList<Rect2d> outline = new ArrayList<>();
         ArrayList<Double> confidences = new ArrayList<>();
 
@@ -120,6 +119,7 @@ public class ImageProcessor {
             Mat detection = layerOutput.get(layer);
 
             for (int row = 0; row < detection.rows(); row++) {
+                ArrayList<Double> scores = new ArrayList<>();
 
                 // Get score[5:] (Get confidence of all classes)
                 for (int col=5; col<detection.cols(); col++){
@@ -130,8 +130,13 @@ public class ImageProcessor {
                 double highestProb = Collections.max(scores);
                 int mostProbIndex = scores.indexOf(highestProb);
 
+                if(highestProb > CONFIDENCE_THRESHOLD){
+                    Log.i(TAG, "CONFIDENCE_THRESHOLD " + ", Class: " + this.labels.get(mostProbIndex));
+                }
+
                 // If person is detected
-                if(this.labels.get(mostProbIndex) == PERSON && highestProb > CONFIDENCE_THRESHOLD){
+                if(this.labels.get(mostProbIndex).equals(PERSON) && highestProb > CONFIDENCE_THRESHOLD){
+                    Log.i(TAG, "Added");
 
                     // Initial box over detected object
                     box.setCentreX(detection.get(row, 0)[0]);
@@ -152,6 +157,7 @@ public class ImageProcessor {
             } // for row
         } // for layer
 
+        Log.i(TAG, "Confidence: " + confidences.size());
 
         // Convert Arraylist to Mat
 //        matOfRect2d.fromList(outline);
