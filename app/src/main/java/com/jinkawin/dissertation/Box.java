@@ -1,5 +1,7 @@
 package com.jinkawin.dissertation;
 
+import org.opencv.core.Rect2d;
+
 public class Box {
 
     private Frame frame;
@@ -19,6 +21,10 @@ public class Box {
     public int getCentreY() { return centreY; }
     public int getWidth() { return width; }
     public int getHeight() { return height; }
+
+    public Rect2d getRect2d(){
+        return new Rect2d(this.x, this.y, this.width, this.height);
+    }
 
     public void setCentreX(double centreX) {
         this.centreX = (int)(centreX * frame.getWidth());
