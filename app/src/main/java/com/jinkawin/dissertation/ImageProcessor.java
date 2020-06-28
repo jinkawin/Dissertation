@@ -2,6 +2,7 @@ package com.jinkawin.dissertation;
 
 import android.content.Context;
 import android.util.Log;
+import android.util.Pair;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -10,6 +11,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect2d;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Rect2d;
 import org.opencv.core.Scalar;
@@ -73,6 +75,7 @@ public class ImageProcessor {
         // Initail variables
         ArrayList<Mat> layerOutputs = new ArrayList<>();
         List<String> layersNames = this.network.getUnconnectedOutLayersNames();
+        Detection detection = new Detection();
 
         // Initial set of result
         for(int i = 0;i < layersNames.size(); i++){
@@ -85,13 +88,23 @@ public class ImageProcessor {
         this.network.setInput(blob);
         this.network.forward(layerOutputs, layersNames);
 
-        getResult(layerOutputs, frame);
+        determineDistance(detectPerson(layerOutputs, frame));
+    }
+
+    public void determineDistance(Detection detection){
+        ArrayList<Pair> couples = new ArrayList<>();
+        ArrayList<Point> centre = new ArrayList<>();
+        ArrayList<Boolean> status = new ArrayList<>();
+
+        for (int index : detection.getIndices().toList()) {
+            
+        }
     }
 
     /**
      *
-     * @param layerOutput
-     * @param frame                  a picture in Mat format
+     * @param layerOutput   layer output of dnn
+     * @param frame         a picture in Mat format
      *
      * YOLO3 Model Output:
      *      0       = Centre X
@@ -102,9 +115,10 @@ public class ImageProcessor {
      *      5-84    = Class Confidence
      *
      */
-    private void getResult(ArrayList<Mat> layerOutput, Mat frame) {
+    private Detection detectPerson(ArrayList<Mat> layerOutput, Mat frame) {
+        ArrayList<Box> boxes = new ArrayList<>();
         ArrayList<Rect2d> outline = new ArrayList<>();
-        ArrayList<Double> confidences = new ArrayList<>();
+        ArrayList<Float> confidences = new ArrayList<>();
 
         MatOfRect2d matOfRect2d = new MatOfRect2d();
         MatOfFloat matOfFloat = new MatOfFloat();
@@ -115,6 +129,7 @@ public class ImageProcessor {
                 (int) frame.size().height
         ));
 
+        // For each layer output
         for (int layer = 0; layer < layerOutput.size(); layer++) {
             Mat detection = layerOutput.get(layer);
 
@@ -144,8 +159,9 @@ public class ImageProcessor {
                     box.setWidth(detection.get(row, 2)[0]);
                     box.setHeight(detection.get(row, 3)[0]);
 
+                    boxes.add(box);
                     outline.add(box.getRect2d());
-                    confidences.add(highestProb);
+                    confidences.add((float)highestProb);
 
                     // Draw box over detected object
                     Imgproc.rectangle(
@@ -157,13 +173,13 @@ public class ImageProcessor {
             } // for row
         } // for layer
 
-        Log.i(TAG, "Confidence: " + confidences.size());
-
         // Convert Arraylist to Mat
-//        matOfRect2d.fromList(outline);
-//        matOfFloat.fromList(confidences);
-//
-//        Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
+        matOfRect2d.fromList(outline);
+        matOfFloat.fromList(confidences);
+
+        Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
+
+        return new Detection(indices, boxes);
     }
 
     /**
