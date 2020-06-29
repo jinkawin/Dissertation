@@ -34,6 +34,7 @@ import java.util.List;
 
 import static org.opencv.dnn.Dnn.DNN_BACKEND_OPENCV;
 import static org.opencv.dnn.Dnn.DNN_TARGET_CPU;
+import static org.opencv.dnn.Dnn.DNN_TARGET_OPENCL;
 
 
 public class ImageProcessor {
@@ -269,7 +270,7 @@ public class ImageProcessor {
         // Initial network
         this.network = Dnn.readNetFromDarknet(configUri, weightPath);
         this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
-        this.network.setPreferableTarget(DNN_TARGET_CPU);
+        this.network.setPreferableTarget(DNN_TARGET_OPENCL);
 
         this.layerNetwork = this.network.getLayerNames();
     }

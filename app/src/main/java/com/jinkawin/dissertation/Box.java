@@ -25,7 +25,7 @@ public class Box {
     public Point getPoint(){ return new Point(this.centreX, this.centreY); }
 
     public Rect2d getRect2d(){
-        return new Rect2d(this.x, this.y, this.width, this.height);
+        return new Rect2d(this.centreX, this.centreY, this.width, this.height);
     }
 
     public void setCentreX(double centreX) {
