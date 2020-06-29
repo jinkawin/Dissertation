@@ -3,7 +3,6 @@ package com.jinkawin.dissertation;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Bitmap;
-import android.media.Image;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -23,8 +22,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        this.processVideo();
-//        this.processImage();
+//        this.processVideo();
+        this.processImage();
     }
 
     public void processVideo(){
@@ -46,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
             // Convert rgba to rgb
             Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-            imageProcessor.process(frame);
+            imageProcessor.processVideo(frame);
         }
 
     }
@@ -54,18 +53,18 @@ public class MainActivity extends AppCompatActivity {
     public void processImage(){
 
         // Initial
-//        ImageProcessor imageProcessor = new ImageProcessor(this);
-//        ImageReader imageReader = new ImageReader(this);
-//
-//        Mat image = imageReader.readImage(R.raw.picturte_test, "picture_test.jpg");
-//
-//        Imgproc.cvtColor(image, image, Imgproc.COLOR_RGBA2RGB);
-//
-//        Mat mat = imageProcessor.process(image);
-//
-//
-//        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
-//        Utils.matToBitmap(mat, savedImage);
-//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+        ImageProcessor imageProcessor = new ImageProcessor(this);
+        ImageReader imageReader = new ImageReader(this);
+
+        Mat image = imageReader.readImage(R.raw.picturte_test, "picture_test.jpg");
+
+        Imgproc.cvtColor(image, image, Imgproc.COLOR_RGBA2RGB);
+
+        Mat mat = imageProcessor.processImage(image);
+
+
+        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
+        Utils.matToBitmap(mat, savedImage);
+        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 }

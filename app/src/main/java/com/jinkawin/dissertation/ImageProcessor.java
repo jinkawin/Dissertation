@@ -1,16 +1,12 @@
 package com.jinkawin.dissertation;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
@@ -34,7 +30,6 @@ import java.util.List;
 
 import static org.opencv.dnn.Dnn.DNN_BACKEND_OPENCV;
 import static org.opencv.dnn.Dnn.DNN_TARGET_CPU;
-import static org.opencv.dnn.Dnn.DNN_TARGET_OPENCL;
 
 
 public class ImageProcessor {
@@ -69,6 +64,16 @@ public class ImageProcessor {
         this._loadOpenCV();
     }
 
+    public void processVideo(Mat frame){
+        Detection detection = this.process(frame);
+        this.determineDistance(detection.getBoxes());
+    }
+
+    public Mat processImage(Mat frame){
+        Detection detection = this.process(frame);
+        return detection.getFrame();
+    }
+
 
     /**
      *
@@ -76,8 +81,7 @@ public class ImageProcessor {
      *
      * Read Dnn.blobFromImage: https://www.pyimagesearch.com/2017/11/06/deep-learning-opencvs-blobfromimage-works/
      */
-    public void process(Mat frame){
-//        Log.i(TAG, "Processing...");
+    private Detection process(Mat frame){
 
         // Initail variables
         ArrayList<Mat> layerOutputs = new ArrayList<>();
@@ -95,23 +99,17 @@ public class ImageProcessor {
         this.network.setInput(blob);
         this.network.forward(layerOutputs, layersNames);
 
-        detectPerson(layerOutputs, frame);
-
-//        determineDistance(detectPerson(layerOutputs, frame));
+        return this.detectPerson(layerOutputs, frame);
     }
 
-    public void determineDistance(Detection detection){
+    public void determineDistance(ArrayList<Box> nmsBoxes){
         SocialDistanceDetection sdd = new SocialDistanceDetection();
         ArrayList<Pair> couples = new ArrayList<>();
         ArrayList<Point> centres = new ArrayList<>();
 
-        int detectedNo = detection.getIndices().toList().size();
-
         // Set all statuses to false
-        Boolean[] statuses = new Boolean[detectedNo];
+        Boolean[] statuses = new Boolean[nmsBoxes.size()];
         Arrays.fill(statuses, false);
-
-        ArrayList<Box> boxes = detection.getBoxes();
 
 //        String test = "";
 //        for(Box box: boxes){
@@ -120,21 +118,21 @@ public class ImageProcessor {
 //        Log.i(TAG, test);
 
         // Check distance between coupled object
-//        for (int i=0; i<detectedNo; i++){
-//            for (int j=i+1; j<detectedNo; j++){
-//                double ax = boxes.get(i).getPoint().x;
-//                double ay = boxes.get(i).getPoint().y;
-//
-//                double bx = boxes.get(j).getPoint().x;
-//                double by = boxes.get(j).getPoint().y;
-//
-//                Log.i(TAG, "a: " + "(" + ax + ", " + ay + ") | " + "b: " + "(" + bx + ", " + by + ")");
-//                Boolean status = sdd.checkDistance(boxes.get(i).getPoint(), boxes.get(j).getPoint());
-//                Log.i(TAG, "Result: " + status);
-//                statuses[i] |= status;
-//                statuses[j] |= status;
-//            }
-//        }
+        for (int i=0; i<nmsBoxes.size(); i++){
+            for (int j=i+1; j<nmsBoxes.size(); j++){
+                double ax = nmsBoxes.get(i).getPoint().x;
+                double ay = nmsBoxes.get(i).getPoint().y;
+
+                double bx = nmsBoxes.get(j).getPoint().x;
+                double by = nmsBoxes.get(j).getPoint().y;
+
+                Log.i(TAG, "a: " + "(" + ax + ", " + ay + ") | " + "b: " + "(" + bx + ", " + by + ")");
+                Boolean status = sdd.checkDistance(nmsBoxes.get(i).getPoint(), nmsBoxes.get(j).getPoint());
+                Log.i(TAG, "Result: " + status);
+                statuses[i] |= status;
+                statuses[j] |= status;
+            }
+        }
 
 //        Log.i(TAG, "Status " + Arrays.toString(statuses));
         Log.i(TAG, "---------------------------");
@@ -183,16 +181,17 @@ public class ImageProcessor {
                 // If person is detected
                 if(this.labels.get(mostProbIndex).equals(PERSON) && highestProb > CONFIDENCE_THRESHOLD){
 
-                    Box box = new Box(new Frame(
-                            (int) frame.size().width,
-                            (int) frame.size().height
-                    ));
-
                     // Initial box over detected object
-                    box.setCentreX(detection.get(row, 0)[0]);
-                    box.setCentreY(detection.get(row, 1)[0]);
-                    box.setWidth(detection.get(row, 2)[0]);
-                    box.setHeight(detection.get(row, 3)[0]);
+                    Box box = new Box(
+                            new Frame(
+                                    (int) frame.size().width,
+                                    (int) frame.size().height
+                            ),
+                            detection.get(row, 0)[0],
+                            detection.get(row, 1)[0],
+                            detection.get(row, 2)[0],
+                            detection.get(row, 3)[0]
+                    );
 
                     boxes.add(box);
                     outline.add(box.getRect2d());
@@ -214,11 +213,16 @@ public class ImageProcessor {
 
         Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
 
-        Log.i(TAG, "outline Size: " + outline.size());
-        Log.i(TAG, "indices Size: " + indices.size());
-        Log.i(TAG, "------------------------");
+        Log.i(TAG, "indices: " + indices.size());
 
-        return new Detection(indices, boxes);
+        ArrayList<Box> nmsBoxes = new ArrayList<>();
+
+        // Filter only outline that is consisted in indices
+        for(int index:indices.toList()){
+            nmsBoxes.add(boxes.get(index));
+        }
+
+        return new Detection(indices, nmsBoxes, frame);
     }
 
     /**
@@ -270,7 +274,7 @@ public class ImageProcessor {
         // Initial network
         this.network = Dnn.readNetFromDarknet(configUri, weightPath);
         this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
-        this.network.setPreferableTarget(DNN_TARGET_OPENCL);
+        this.network.setPreferableTarget(DNN_TARGET_CPU);
 
         this.layerNetwork = this.network.getLayerNames();
     }
