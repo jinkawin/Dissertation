@@ -1,12 +1,16 @@
 package com.jinkawin.dissertation;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
@@ -24,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,7 +51,8 @@ public class ImageProcessor {
     private static final float NMS_THRESHOLD = 0.3f;
 
 
-    private static final Scalar COLOUR_BLACK = new Scalar(255, 255, 255);
+    private static final Scalar COLOUR_WHITE = new Scalar(255, 255, 255);
+    private static final Scalar COLOUR_GREEN = new Scalar(0, 255, 0);
 
     private Context context;
 
@@ -70,7 +76,7 @@ public class ImageProcessor {
      * Read Dnn.blobFromImage: https://www.pyimagesearch.com/2017/11/06/deep-learning-opencvs-blobfromimage-works/
      */
     public void process(Mat frame){
-        Log.i(TAG, "Processing...");
+//        Log.i(TAG, "Processing...");
 
         // Initail variables
         ArrayList<Mat> layerOutputs = new ArrayList<>();
@@ -88,17 +94,50 @@ public class ImageProcessor {
         this.network.setInput(blob);
         this.network.forward(layerOutputs, layersNames);
 
-        determineDistance(detectPerson(layerOutputs, frame));
+        detectPerson(layerOutputs, frame);
+
+//        determineDistance(detectPerson(layerOutputs, frame));
     }
 
     public void determineDistance(Detection detection){
+        SocialDistanceDetection sdd = new SocialDistanceDetection();
         ArrayList<Pair> couples = new ArrayList<>();
-        ArrayList<Point> centre = new ArrayList<>();
-        ArrayList<Boolean> status = new ArrayList<>();
+        ArrayList<Point> centres = new ArrayList<>();
 
-        for (int index : detection.getIndices().toList()) {
-            
-        }
+        int detectedNo = detection.getIndices().toList().size();
+
+        // Set all statuses to false
+        Boolean[] statuses = new Boolean[detectedNo];
+        Arrays.fill(statuses, false);
+
+        ArrayList<Box> boxes = detection.getBoxes();
+
+//        String test = "";
+//        for(Box box: boxes){
+//            test = test + "(" + box.getCentreX() + "," + box.getCentreY() + ") | ";
+//        }
+//        Log.i(TAG, test);
+
+        // Check distance between coupled object
+//        for (int i=0; i<detectedNo; i++){
+//            for (int j=i+1; j<detectedNo; j++){
+//                double ax = boxes.get(i).getPoint().x;
+//                double ay = boxes.get(i).getPoint().y;
+//
+//                double bx = boxes.get(j).getPoint().x;
+//                double by = boxes.get(j).getPoint().y;
+//
+//                Log.i(TAG, "a: " + "(" + ax + ", " + ay + ") | " + "b: " + "(" + bx + ", " + by + ")");
+//                Boolean status = sdd.checkDistance(boxes.get(i).getPoint(), boxes.get(j).getPoint());
+//                Log.i(TAG, "Result: " + status);
+//                statuses[i] |= status;
+//                statuses[j] |= status;
+//            }
+//        }
+
+//        Log.i(TAG, "Status " + Arrays.toString(statuses));
+        Log.i(TAG, "---------------------------");
+
     }
 
     /**
@@ -124,11 +163,6 @@ public class ImageProcessor {
         MatOfFloat matOfFloat = new MatOfFloat();
         MatOfInt indices = new MatOfInt();
 
-        Box box = new Box(new Frame(
-                (int) frame.size().width,
-                (int) frame.size().height
-        ));
-
         // For each layer output
         for (int layer = 0; layer < layerOutput.size(); layer++) {
             Mat detection = layerOutput.get(layer);
@@ -145,13 +179,13 @@ public class ImageProcessor {
                 double highestProb = Collections.max(scores);
                 int mostProbIndex = scores.indexOf(highestProb);
 
-                if(highestProb > CONFIDENCE_THRESHOLD){
-                    Log.i(TAG, "CONFIDENCE_THRESHOLD " + ", Class: " + this.labels.get(mostProbIndex));
-                }
-
                 // If person is detected
                 if(this.labels.get(mostProbIndex).equals(PERSON) && highestProb > CONFIDENCE_THRESHOLD){
-                    Log.i(TAG, "Added");
+
+                    Box box = new Box(new Frame(
+                            (int) frame.size().width,
+                            (int) frame.size().height
+                    ));
 
                     // Initial box over detected object
                     box.setCentreX(detection.get(row, 0)[0]);
@@ -167,7 +201,7 @@ public class ImageProcessor {
                     Imgproc.rectangle(
                             frame,
                             new Rect(box.getX(), box.getY(), box.getWidth(), box.getHeight()),
-                            COLOUR_BLACK
+                            COLOUR_WHITE
                     );
                 }
             } // for row
@@ -178,6 +212,10 @@ public class ImageProcessor {
         matOfFloat.fromList(confidences);
 
         Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
+
+        Log.i(TAG, "outline Size: " + outline.size());
+        Log.i(TAG, "indices Size: " + indices.size());
+        Log.i(TAG, "------------------------");
 
         return new Detection(indices, boxes);
     }

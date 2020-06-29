@@ -1,5 +1,6 @@
 package com.jinkawin.dissertation;
 
+import org.opencv.core.Point;
 import org.opencv.core.Rect2d;
 
 public class Box {
@@ -15,12 +16,13 @@ public class Box {
 
     public Box(Frame frame){ this.frame = frame; }
 
-    public int getX(){ return this.x; }
-    public int getY(){ return this.y; }
+    public int getX(){ return (int)(this.centreX - (this.width / 2.0)); }
+    public int getY(){ return (int)(this.centreY - (this.height / 2.0)); }
     public int getCentreX() { return centreX; }
     public int getCentreY() { return centreY; }
     public int getWidth() { return width; }
     public int getHeight() { return height; }
+    public Point getPoint(){ return new Point(this.centreX, this.centreY); }
 
     public Rect2d getRect2d(){
         return new Rect2d(this.x, this.y, this.width, this.height);
@@ -28,12 +30,10 @@ public class Box {
 
     public void setCentreX(double centreX) {
         this.centreX = (int)(centreX * frame.getWidth());
-        this.x = (int)(this.centreX - (this.width / 2));
     }
 
     public void setCentreY(double centreY) {
         this.centreY = (int)(centreY * frame.getHeight());
-        this.y = (int)(this.centreY - (this.height / 2));
     }
 
     public void setWidth(double width) {
