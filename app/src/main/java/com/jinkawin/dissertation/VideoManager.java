@@ -2,30 +2,40 @@ package com.jinkawin.dissertation;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.util.Log;
 
 import org.jcodec.api.FrameGrab;
 import org.jcodec.api.JCodecException;
+import org.jcodec.api.android.AndroidSequenceEncoder;
 import org.jcodec.common.AndroidUtil;
 import org.jcodec.common.io.NIOUtils;
+import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Picture;
+import org.jcodec.common.model.Rational;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class VideoReader {
+public class VideoManager {
 
-    public static final String TAG = "VideoReader";
+    public static final String TAG = "VideoManager";
     private static final String PATH_RAW = "android.resource://com.jinkawin.dissertation/raw/";
 
-    private Context context;
+    public static String CONTAINER = ".mp4";
+    public static final int FPS = 30;
 
-    public VideoReader(Context context){
+    private Context context;
+    private ArrayList<Mat> frames;
+
+    public VideoManager(Context context){
         this.context = context;
+        this.frames = new ArrayList<>();
     }
 
     /**
@@ -65,5 +75,32 @@ public class VideoReader {
 
         return mats;
     }
+
+
+    public void saveVideo(ArrayList<Mat> frames, String name){
+        File targetFolder = this.context.getExternalMediaDirs()[0];
+        SeekableByteChannel out = null;
+
+        try {
+            out = NIOUtils.writableFileChannel(targetFolder.getAbsolutePath() + "/" + name + CONTAINER);
+            AndroidSequenceEncoder encoder = new AndroidSequenceEncoder(out, Rational.R(FPS, 1));
+
+
+            for (Mat frame:frames) {
+                Bitmap bitmap = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.RGBA_F16);
+                Utils.matToBitmap(frame, bitmap);
+                encoder.encodeImage(bitmap);
+            }
+
+            encoder.finish();
+        } catch (FileNotFoundException fe){
+            Log.e(TAG, "saveVideo: " + fe.getMessage());
+        } catch (IOException ioe){
+            Log.e(TAG, "saveVideo: " + ioe.getMessage());
+        } finally {
+            NIOUtils.closeQuietly(out);
+        }
+    }
+
 
 }

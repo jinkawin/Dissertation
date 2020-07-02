@@ -2,7 +2,6 @@ package com.jinkawin.dissertation;
 
 import android.content.Context;
 import android.util.Log;
-import android.util.Pair;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -11,7 +10,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect2d;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Rect2d;
 import org.opencv.core.Scalar;
@@ -49,6 +47,7 @@ public class ImageProcessor {
 
     private static final Scalar COLOUR_WHITE = new Scalar(255, 255, 255);
     private static final Scalar COLOUR_GREEN = new Scalar(0, 255, 0);
+    private static final Scalar COLOUR_RED = new Scalar(255, 0, 0);
 
     private Context context;
 
@@ -64,13 +63,10 @@ public class ImageProcessor {
         this._loadOpenCV();
     }
 
-    public void processVideo(Mat frame){
-        Detection detection = this.process(frame);
-        this.determineDistance(detection.getBoxes());
-    }
+    public Mat process(Mat frame){
+        Detection detection = this._process(frame);
+        detection = this.determineDistance(detection);
 
-    public Mat processImage(Mat frame){
-        Detection detection = this.process(frame);
         return detection.getFrame();
     }
 
@@ -81,12 +77,11 @@ public class ImageProcessor {
      *
      * Read Dnn.blobFromImage: https://www.pyimagesearch.com/2017/11/06/deep-learning-opencvs-blobfromimage-works/
      */
-    private Detection process(Mat frame){
+    private Detection _process(Mat frame){
 
         // Initail variables
         ArrayList<Mat> layerOutputs = new ArrayList<>();
         List<String> layersNames = this.network.getUnconnectedOutLayersNames();
-        Detection detection = new Detection();
 
         // Initial set of result
         for(int i = 0;i < layersNames.size(); i++){
@@ -99,50 +94,48 @@ public class ImageProcessor {
         this.network.setInput(blob);
         this.network.forward(layerOutputs, layersNames);
 
-        return this.detectPerson(layerOutputs, frame);
+        return this.detectPerson(layerOutputs, frame, false);
     }
 
-    public void determineDistance(ArrayList<Box> nmsBoxes){
+    public Detection determineDistance(Detection detection){
         SocialDistanceDetection sdd = new SocialDistanceDetection();
-        ArrayList<Pair> couples = new ArrayList<>();
-        ArrayList<Point> centres = new ArrayList<>();
+        ArrayList<Box> nmsBoxes = detection.getBoxes();
+        Mat frame = detection.getFrame();
 
         // Set all statuses to false
         Boolean[] statuses = new Boolean[nmsBoxes.size()];
         Arrays.fill(statuses, false);
 
-//        String test = "";
-//        for(Box box: boxes){
-//            test = test + "(" + box.getCentreX() + "," + box.getCentreY() + ") | ";
-//        }
-//        Log.i(TAG, test);
-
         // Check distance between coupled object
         for (int i=0; i<nmsBoxes.size(); i++){
             for (int j=i+1; j<nmsBoxes.size(); j++){
-                double ax = nmsBoxes.get(i).getPoint().x;
-                double ay = nmsBoxes.get(i).getPoint().y;
-
-                double bx = nmsBoxes.get(j).getPoint().x;
-                double by = nmsBoxes.get(j).getPoint().y;
-
-                Log.i(TAG, "a: " + "(" + ax + ", " + ay + ") | " + "b: " + "(" + bx + ", " + by + ")");
                 Boolean status = sdd.checkDistance(nmsBoxes.get(i).getPoint(), nmsBoxes.get(j).getPoint());
-                Log.i(TAG, "Result: " + status);
                 statuses[i] |= status;
                 statuses[j] |= status;
             }
         }
 
-//        Log.i(TAG, "Status " + Arrays.toString(statuses));
-        Log.i(TAG, "---------------------------");
+        // Draw box over detected object
+        for(int i=0; i<statuses.length; i++){
+            Scalar colour = statuses[i]?COLOUR_RED:COLOUR_GREEN;
+
+            Imgproc.rectangle(
+                    frame,
+                    new Rect(nmsBoxes.get(i).getX(), nmsBoxes.get(i).getY(), nmsBoxes.get(i).getWidth(), nmsBoxes.get(i).getHeight()),
+                    colour
+            );
+        }
+        detection.setFrame(frame);
+
+        return detection;
 
     }
 
     /**
      *
-     * @param layerOutput   layer output of dnn
-     * @param frame         a picture in Mat format
+     * @param layerOutput               layer output of dnn
+     * @param frame                     a picture in Mat format
+     * @param isDrawEveryDetectedObj    draw white regtangle for every detected object (before nmsbox)
      *
      * YOLO3 Model Output:
      *      0       = Centre X
@@ -153,7 +146,7 @@ public class ImageProcessor {
      *      5-84    = Class Confidence
      *
      */
-    private Detection detectPerson(ArrayList<Mat> layerOutput, Mat frame) {
+    private Detection detectPerson(ArrayList<Mat> layerOutput, Mat frame, boolean isDrawEveryDetectedObj) {
         ArrayList<Box> boxes = new ArrayList<>();
         ArrayList<Rect2d> outline = new ArrayList<>();
         ArrayList<Float> confidences = new ArrayList<>();
@@ -197,12 +190,14 @@ public class ImageProcessor {
                     outline.add(box.getRect2d());
                     confidences.add((float)highestProb);
 
-                    // Draw box over detected object
-                    Imgproc.rectangle(
-                            frame,
-                            new Rect(box.getX(), box.getY(), box.getWidth(), box.getHeight()),
-                            COLOUR_WHITE
-                    );
+                    if(isDrawEveryDetectedObj) {
+                        // Draw box over detected object
+                        Imgproc.rectangle(
+                                frame,
+                                new Rect(box.getX(), box.getY(), box.getWidth(), box.getHeight()),
+                                COLOUR_WHITE
+                        );
+                    }
                 }
             } // for row
         } // for layer
@@ -212,8 +207,6 @@ public class ImageProcessor {
         matOfFloat.fromList(confidences);
 
         Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
-
-        Log.i(TAG, "indices: " + indices.size());
 
         ArrayList<Box> nmsBoxes = new ArrayList<>();
 
@@ -232,10 +225,8 @@ public class ImageProcessor {
         @Override
         public void onManagerConnected(int status) {
             if(status == LoaderCallbackInterface.SUCCESS){
-                Log.i(TAG, "callback success");
                 _setupNetwork();
             }else{
-                Log.i(TAG, "callback else");
                 super.onManagerConnected(status);
             }
         }
@@ -247,12 +238,8 @@ public class ImageProcessor {
     private void _loadOpenCV(){
         // If OpenCV's libraries are not loaded
         if(!OpenCVLoader.initDebug()){
-
-            Log.i(TAG, "initDebug");
             boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this.context, blCallback);
         }else{
-
-            Log.i(TAG, "initDebug Success");
             blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
@@ -268,8 +255,6 @@ public class ImageProcessor {
         // Read and copy files to internal storage
         String weightPath = fileUtility.readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
         String configUri = fileUtility.readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
-
-        Log.i(TAG, "_setupNetwork");
 
         // Initial network
         this.network = Dnn.readNetFromDarknet(configUri, weightPath);
