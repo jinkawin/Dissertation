@@ -124,6 +124,8 @@ public class ImageProcessor {
                     new Rect(nmsBoxes.get(i).getX(), nmsBoxes.get(i).getY(), nmsBoxes.get(i).getWidth(), nmsBoxes.get(i).getHeight()),
                     colour
             );
+
+            /* TODO: Add line */
         }
         detection.setFrame(frame);
 
