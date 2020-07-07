@@ -29,7 +29,6 @@ import java.util.List;
 import static org.opencv.dnn.Dnn.DNN_BACKEND_OPENCV;
 import static org.opencv.dnn.Dnn.DNN_TARGET_CPU;
 
-
 public class ImageProcessor {
 
     public static final String TAG = "ImageProcessor";
@@ -56,15 +55,20 @@ public class ImageProcessor {
     private List<String> labels;
 
 
-    public ImageProcessor(Context context){
+    public ImageProcessor(Context context, String weightPath, String configUri){
         this.context = context;
         this.labels = this._readLabels(R.raw.coco_names);
 
-        this._loadOpenCV();
+        // Initial network
+        this.network = Dnn.readNetFromDarknet(configUri, weightPath);
+        this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
+        this.network.setPreferableTarget(DNN_TARGET_CPU);
+
+//        this.layerNetwork = this.network.getLayerNames();
     }
 
     public Mat process(Mat frame){
-        Detection detection = this._process(frame);
+        Detection detection = this.forwardNetwork(frame);
         detection = this.determineDistance(detection);
 
         return detection.getFrame();
@@ -77,7 +81,7 @@ public class ImageProcessor {
      *
      * Read Dnn.blobFromImage: https://www.pyimagesearch.com/2017/11/06/deep-learning-opencvs-blobfromimage-works/
      */
-    private Detection _process(Mat frame){
+    private Detection forwardNetwork(Mat frame){
 
         // Initail variables
         ArrayList<Mat> layerOutputs = new ArrayList<>();
@@ -218,52 +222,6 @@ public class ImageProcessor {
         }
 
         return new Detection(indices, nmsBoxes, frame);
-    }
-
-    /**
-     * Callback when OpenCV libraries are loaded.
-     */
-    private BaseLoaderCallback blCallback = new BaseLoaderCallback() {
-        @Override
-        public void onManagerConnected(int status) {
-            if(status == LoaderCallbackInterface.SUCCESS){
-                _setupNetwork();
-            }else{
-                super.onManagerConnected(status);
-            }
-        }
-    };
-
-    /**
-     * Load OpenCV libraries (version 3.4.0)
-     */
-    private void _loadOpenCV(){
-        // If OpenCV's libraries are not loaded
-        if(!OpenCVLoader.initDebug()){
-            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this.context, blCallback);
-        }else{
-            blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
-    }
-
-    /**
-     * Load config file and model file to the network
-     *
-     * Read: https://docs.opencv.org/3.4/d6/d0f/group__dnn.html#ga186f7d9bfacac8b0ff2e26e2eab02625
-     */
-    private void _setupNetwork(){
-        FileUtility fileUtility = new FileUtility(this.context);
-
-        // Read and copy files to internal storage
-        String weightPath = fileUtility.readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
-        String configUri = fileUtility.readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
-
-        // Initial network
-        this.network = Dnn.readNetFromDarknet(configUri, weightPath);
-        this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
-        this.network.setPreferableTarget(DNN_TARGET_CPU);
-
-        this.layerNetwork = this.network.getLayerNames();
     }
 
     /**

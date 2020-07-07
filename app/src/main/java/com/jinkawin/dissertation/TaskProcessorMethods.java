@@ -10,11 +10,17 @@ public interface TaskProcessorMethods {
 
     void handleProcessState(ProcessStatus status, Result result);
 
-    Context getContext();
-
     Mat getFrame();
 
     int getIndex();
 
     Size getSize();
+
+    String getWeightPath();
+
+    String getConfigPath();
+
+    ImageProcessor getProcessor();
+
+    Context getContext();
 }

@@ -15,6 +15,9 @@ import org.jcodec.api.android.AndroidSequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Rational;
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
@@ -24,7 +27,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,10 +37,31 @@ public class MainActivity extends AppCompatActivity {
 
     public ProcessorBroadcastReceiver receiver;
 
+    public String saveVideoPath;
+
+    public String weightPath;
+    public String configPath;
+
+    /**
+     * Callback when OpenCV libraries are loaded.
+     */
+    private BaseLoaderCallback blCallback = new BaseLoaderCallback() {
+        @Override
+        public void onManagerConnected(int status) {
+            if(status == LoaderCallbackInterface.SUCCESS){
+                Log.i(TAG, "onManagerConnected: Setup OpenCV is done");
+            }else{
+                super.onManagerConnected(status);
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        setup();
 
         this.processParallelVideo();
 //        this.processVideo();
@@ -47,29 +70,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void processParallelVideo(){
         // Initial
-        ImageProcessor imageProcessor = new ImageProcessor(this);
         VideoManager videoManager = new VideoManager(this);
 
         // Register receiver
         receiver = new ProcessorBroadcastReceiver();
         this.registerReceiver(this.receiver, new IntentFilter(ProcessorBroadcastReceiver.ACTION));
 
-        // Init context for broadcasting
-        ImageProcessorManager.setContext(this);
-
-        // Init for saving video
-//        File targetFolder = this.getExternalMediaDirs()[0];
-//        SeekableByteChannel out = null;
-//        AndroidSequenceEncoder encoder = null;
-//        try {
-//            /* TODO: Change save path to Gallery */
-//            out = NIOUtils.writableFileChannel(targetFolder.getAbsolutePath() + "/" + System.currentTimeMillis() + ".mp4");
-//            encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
-//        } catch (FileNotFoundException fe){
-//            Log.e(TAG, "saveVideo: " + fe.getMessage());
-//        } catch (IOException ioe){
-//            Log.e(TAG, "saveVideo: " + ioe.getMessage());
-//        }
+        // Init context for broadcasting and setup ImageProcessor
+        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
 
         // Read Video from RAW Folder
         ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
@@ -86,11 +94,11 @@ public class MainActivity extends AppCompatActivity {
         /* TODO: Record time */
         Long start = System.currentTimeMillis();
         for(int i=0; i<mats.size();i++){
-            Log.i("ImageProcessor", "frame: " + i + "/" + mats.size());
+            Log.i(TAG, "frame: " + i + "/" + mats.size());
 
-            if((i % 2) == 0) {
+//            if((i % 2) == 0) {
                 ImageProcessorManager.process(mats.get(0), newSize, i);
-            }
+//            }
 
             //Save frame to video
 //            try {
@@ -102,27 +110,14 @@ public class MainActivity extends AppCompatActivity {
 //            }
         }
 
-        // TODO: sort array
-
-        // TODO: encode to video
-//        for (int i = 0; i < results.size(); i++) {
-//            encoder.encodeImage(results.get(i));
-//        }
-
         Long finish = System.currentTimeMillis();
         Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
-//        try {
-//            encoder.finish();
-//        } catch (IOException e){
-//            Log.e(TAG, e.getMessage());
-//        }
-//        NIOUtils.closeQuietly(out);
     }
 
     public void processVideo(){
         // Initial
-        ImageProcessor imageProcessor = new ImageProcessor(this);
+        ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
         VideoManager videoManager = new VideoManager(this);
 
         // Init for saving video
@@ -192,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
     public void processImage(){
 
         // Initial
-        ImageProcessor imageProcessor = new ImageProcessor(this);
+        ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
         ImageReader imageReader = new ImageReader(this);
 
         Mat image = imageReader.readImage(R.raw.picturte_test, "picture_test.jpg");
@@ -214,7 +209,62 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             results = (ArrayList<Result>) intent.getSerializableExtra("data");
 
-            results.size();
+            // Init for saving video
+            SeekableByteChannel out = null;
+            AndroidSequenceEncoder encoder = null;
+            try {
+                /* TODO: Change save path to Gallery */
+                out = NIOUtils.writableFileChannel(saveVideoPath + "/" + System.currentTimeMillis() + ".mp4");
+                encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
+            } catch (FileNotFoundException fe){
+                Log.e(TAG, "saveVideo: " + fe.getMessage());
+            } catch (IOException ioe){
+                Log.e(TAG, "saveVideo: " + ioe.getMessage());
+            }
+
+            // TODO: sort array
+            Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
+
+            // TODO: encode to video
+            for (int i = 0; i < results.size(); i++) {
+//                try {
+                    Mat _frame = results.get(i).getFrame();
+                Log.i(TAG, "onReceive: Size: " + _frame.size().height + ", " + _frame.size().width);
+//                    encoder.encodeImage(results.get(i).getBitmap());
+//                } catch (IOException e) {
+//                    Log.e(TAG, "processParallelVideo: " + e.getMessage());
+//                }
+            }
+
+            try {
+                encoder.finish();
+            } catch (IOException e){
+                Log.e(TAG, e.getMessage());
+            }
+            NIOUtils.closeQuietly(out);
+        }
+    }
+
+    public void setup(){
+        loadOpenCV();
+
+        this.saveVideoPath = this.getExternalMediaDirs()[0].getAbsolutePath();
+
+        // Read and copy files to internal storage
+        FileUtility fileUtility = new FileUtility(this);
+        this.weightPath = fileUtility.readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
+        this.configPath = fileUtility.readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
+    }
+
+    /**
+     * Load OpenCV libraries (version 3.4.0)
+     */
+    public void loadOpenCV(){
+        // If OpenCV's libraries are not loaded
+        if(!OpenCVLoader.initDebug()){
+            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, blCallback);
+        }else{
+            blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
 }

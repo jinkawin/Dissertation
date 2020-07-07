@@ -13,21 +13,29 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     private Thread currentThread;
     private ImageProcessorRunnable imageProcessorRunnable;
 
+    private static ImageProcessor imageProcessor;
     private static Context context;
     private Mat frame;
     private int index = -1;
     private Size size;
+    private String weightPath;
+    private String configPath;
 
     public ImageProcessorTask(){
         instance = ImageProcessorManager.getInstance();
         imageProcessorRunnable = new ImageProcessorRunnable(this);
     }
 
-    public void initTask(Context context, Mat frame, Size newSize, int index){
+    public void initTask(Context context, Mat frame, Size newSize, int index, String weightPath, String configPath){
         this.context = context;
         this.frame = frame;
         this.size = newSize;
         this.index = index;
+
+        this.weightPath = weightPath;
+        this.configPath = configPath;
+
+//        imageProcessor = processor;
     }
 
     /**
@@ -60,11 +68,6 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     }
 
     @Override
-    public Context getContext() {
-        return this.context;
-    }
-
-    @Override
     public Mat getFrame() {
         return this.frame;
     }
@@ -77,6 +80,26 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     @Override
     public Size getSize() {
         return this.size;
+    }
+
+    @Override
+    public String getWeightPath() {
+        return this.weightPath;
+    }
+
+    @Override
+    public String getConfigPath() {
+        return this.configPath;
+    }
+
+    @Override
+    public ImageProcessor getProcessor() {
+        return imageProcessor;
+    }
+
+    @Override
+    public Context getContext() {
+        return context;
     }
 
 }

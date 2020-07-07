@@ -23,7 +23,7 @@ public class ImageProcessorRunnable implements Runnable{
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
         // Initial ImagePrcessor
-        ImageProcessor imageProcessor = new ImageProcessor(taskProcessorMethods.getContext());
+        ImageProcessor imageProcessor = new ImageProcessor(taskProcessorMethods.getContext(), taskProcessorMethods.getWeightPath(), taskProcessorMethods.getConfigPath());
 
         // Get target frame
         Mat frame = taskProcessorMethods.getFrame();

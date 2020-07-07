@@ -48,6 +48,9 @@ public class ImageProcessorManager {
     private static ArrayList<Result> results;
     private static Context context;
     private static int count;
+    private static ImageProcessor imageProcessor;
+    private static String weightPath;
+    private static String configPath;
 
     // Message manager
     private Handler handler;
@@ -120,7 +123,7 @@ public class ImageProcessorManager {
         }
 
         // Intial task
-        processorTask.initTask(context, frame, size, index);
+        processorTask.initTask(context, frame, size, index, weightPath, configPath);
 
         // Start processing image
         instance.processorThreadPool.execute(processorTask.getImageProcessorRunnable());
@@ -149,7 +152,9 @@ public class ImageProcessorManager {
         context.sendBroadcast(intent);
     }
 
-    public static void setContext(Context ct){
+    public static void setProcessor(Context ct, String _weightPath, String _configPath){
         context = ct;
+        weightPath = _weightPath;
+        configPath = _configPath;
     }
 }
