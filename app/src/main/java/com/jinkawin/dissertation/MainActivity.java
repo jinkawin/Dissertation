@@ -94,10 +94,11 @@ public class MainActivity extends AppCompatActivity {
         /* TODO: Record time */
         Long start = System.currentTimeMillis();
         for(int i=0; i<mats.size();i++){
+//        for(int i=0; i<2;i++){
             Log.i(TAG, "frame: " + i + "/" + mats.size());
 
 //            if((i % 2) == 0) {
-                ImageProcessorManager.process(mats.get(0), newSize, i);
+                ImageProcessorManager.process(mats.get(i), newSize, i);
 //            }
 
             //Save frame to video
@@ -207,7 +208,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            results = (ArrayList<Result>) intent.getSerializableExtra("data");
+            ArrayList<Result> results = ImageProcessorManager.getResults();
+            Log.i(TAG, "onReceive: Result size: " + results.size());
 
             // Init for saving video
             SeekableByteChannel out = null;
@@ -225,15 +227,13 @@ public class MainActivity extends AppCompatActivity {
             // TODO: sort array
             Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
 
-            // TODO: encode to video
+            // encode to video
             for (int i = 0; i < results.size(); i++) {
-//                try {
-                    Mat _frame = results.get(i).getFrame();
-                Log.i(TAG, "onReceive: Size: " + _frame.size().height + ", " + _frame.size().width);
-//                    encoder.encodeImage(results.get(i).getBitmap());
-//                } catch (IOException e) {
-//                    Log.e(TAG, "processParallelVideo: " + e.getMessage());
-//                }
+                try {
+                    encoder.encodeImage(results.get(i).getBitmap());
+                } catch (IOException e) {
+                    Log.e(TAG, "processParallelVideo: " + e.getMessage());
+                }
             }
 
             try {

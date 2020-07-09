@@ -6,6 +6,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Size;
 
 public class ImageProcessorTask implements TaskProcessorMethods {
+    private static final String TAG = "ImageProcessorTask";
 
     // For singleton pattern
     private static ImageProcessorManager instance;
@@ -13,7 +14,6 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     private Thread currentThread;
     private ImageProcessorRunnable imageProcessorRunnable;
 
-    private static ImageProcessor imageProcessor;
     private static Context context;
     private Mat frame;
     private int index = -1;
@@ -34,8 +34,6 @@ public class ImageProcessorTask implements TaskProcessorMethods {
 
         this.weightPath = weightPath;
         this.configPath = configPath;
-
-//        imageProcessor = processor;
     }
 
     /**
@@ -54,6 +52,16 @@ public class ImageProcessorTask implements TaskProcessorMethods {
         return imageProcessorRunnable;
     }
 
+    void recycle() {
+
+        this.frame = null;
+        this.size = null;
+        this.index = -1;
+
+        this.weightPath = null;
+        this.configPath = null;
+    }
+
     @Override
     public void setThread(Thread thread) {
         synchronized (instance){
@@ -63,8 +71,13 @@ public class ImageProcessorTask implements TaskProcessorMethods {
 
     @Override
     // Send the message back to the object in the thread pool
-    public void handleProcessState(ProcessStatus status, Result result) {
-        instance.handleState(status, result);
+    public void handleProcessState(ProcessStatus status) {
+        instance.handleState(this, status);
+    }
+
+    @Override
+    public void setFrame(Mat frame) {
+        this.frame = frame;
     }
 
     @Override
@@ -90,11 +103,6 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     @Override
     public String getConfigPath() {
         return this.configPath;
-    }
-
-    @Override
-    public ImageProcessor getProcessor() {
-        return imageProcessor;
     }
 
     @Override

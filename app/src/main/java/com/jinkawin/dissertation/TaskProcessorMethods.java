@@ -8,7 +8,9 @@ import org.opencv.core.Size;
 public interface TaskProcessorMethods {
     void setThread(Thread thread);
 
-    void handleProcessState(ProcessStatus status, Result result);
+    void handleProcessState(ProcessStatus status);
+
+    void setFrame(Mat frame);
 
     Mat getFrame();
 
@@ -19,8 +21,6 @@ public interface TaskProcessorMethods {
     String getWeightPath();
 
     String getConfigPath();
-
-    ImageProcessor getProcessor();
 
     Context getContext();
 }

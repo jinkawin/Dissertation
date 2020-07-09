@@ -47,8 +47,7 @@ public class ImageProcessorManager {
 
     private static ArrayList<Result> results;
     private static Context context;
-    private static int count;
-    private static ImageProcessor imageProcessor;
+    private static int inputCount;
     private static String weightPath;
     private static String configPath;
 
@@ -65,7 +64,7 @@ public class ImageProcessorManager {
 
         results = new ArrayList<Result>();
 
-        count = 0;
+        inputCount = 0;
     }
 
 
@@ -82,37 +81,33 @@ public class ImageProcessorManager {
         handler = new Handler(Looper.getMainLooper()){
             @Override
             public void handleMessage(@NonNull Message msg) {
-                Result _result = (Result) msg.obj;
-
-                if(_result.getStatus() == ResponseType.DATA) {
-                    Log.i(TAG, "handleMessage: " + msg.what + "| Result index: " + _result.getIndex());
-                }
+                ImageProcessorTask processorTask = (ImageProcessorTask) msg.obj;
 
                 switch (ProcessStatus.intToEnum(msg.what)){
                     case SUCCESS:
-                        if(_result.getIndex() > -1) {
-                            results.add(_result);
-                            Log.i(TAG, "handleMessage: Result is added with size: " + results.size());
+                        Log.i(TAG, "handleMessage: Result is added: " + results.size());
+                        results.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
+
+                        if(results.size() == inputCount){
+                            Log.i(TAG, "handleMessage: All threads are done");
+                            noticeMainActivity();
                         }
+
+                        // Recycle task for reusing
+                        recycleTask(processorTask);
+
+                        break;
                     default:
                         Log.i(TAG, "handleMessage: default");
                 }
-
-                if(results.size() == count){
-                    Log.i(TAG, "handleMessage: yes");
-                    noticeMainActivity();
-                }else{
-                    Log.i(TAG, "handleMessage: no");
-                }
-
             }
         };
     }
 
     public static ImageProcessorTask process(Mat frame, Size size, int index){
         Log.i(TAG, "process: Start process index:  " + index);
-        count++;
-        Log.i(TAG, "process: Count: " + count);
+        inputCount++;
+        Log.i(TAG, "process: Count: " + inputCount);
 
         // Try to get and deque the queue
         ImageProcessorTask processorTask = instance.taskQueue.poll();
@@ -129,14 +124,14 @@ public class ImageProcessorManager {
         instance.processorThreadPool.execute(processorTask.getImageProcessorRunnable());
 
         // Send message that task are done
-        instance.handleState(ProcessStatus.SUCCESS, new Result(ResponseType.FINISH));
+//        instance.handleState(ProcessStatus.SUCCESS, new Result(ResponseType.FINISH));
 
         return processorTask;
     }
 
     // Send the message back to handler
-    public void handleState(ProcessStatus status, Result result){
-        handler.obtainMessage(status.getValue(), result).sendToTarget();
+    public void handleState(ImageProcessorTask processorTask ,ProcessStatus status){
+        handler.obtainMessage(status.getValue(), processorTask).sendToTarget();
     }
 
     public static ImageProcessorManager getInstance(){
@@ -148,7 +143,7 @@ public class ImageProcessorManager {
         Log.i(TAG, "noticeMainActivity: Noticing...");
         Intent intent = new Intent();
         intent.setAction(MainActivity.ProcessorBroadcastReceiver.ACTION);
-        intent.putExtra("data", results);
+        intent.putExtra("data", ProcessStatus.FINISH);
         context.sendBroadcast(intent);
     }
 
@@ -156,5 +151,18 @@ public class ImageProcessorManager {
         context = ct;
         weightPath = _weightPath;
         configPath = _configPath;
+    }
+
+    public static ArrayList<Result> getResults(){
+        return results;
+    }
+
+    public void recycleTask(ImageProcessorTask task) {
+
+        // Frees up memory in the task
+        task.recycle();
+
+        // Puts the task object back into the queue for re-use.
+        taskQueue.offer(task);
     }
 }

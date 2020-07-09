@@ -216,9 +216,13 @@ public class ImageProcessor {
 
         ArrayList<Box> nmsBoxes = new ArrayList<>();
 
+
+
         // Filter only outline that is consisted in indices
-        for(int index:indices.toList()){
-            nmsBoxes.add(boxes.get(index));
+        if(indices.size().height > 0) { // If there is at lease 1 index
+            for (int index : indices.toList()) {
+                nmsBoxes.add(boxes.get(index));
+            }
         }
 
         return new Detection(indices, nmsBoxes, frame);

@@ -3,7 +3,8 @@ package com.jinkawin.dissertation;
 public enum ProcessStatus {
     PROCESSING(Constants.PROCESSING),
     SUCCESS(Constants.SUCCESS),
-    FAIL(Constants.FAIL);
+    FAIL(Constants.FAIL),
+    FINISH(Constants.FINISH);
 
     private final int value;
 
@@ -23,6 +24,8 @@ public enum ProcessStatus {
                 return ProcessStatus.SUCCESS;
             case Constants.FAIL:
                 return ProcessStatus.FAIL;
+            case Constants.FINISH:
+                return ProcessStatus.FINISH;
         }
         return null;
     }
@@ -31,5 +34,6 @@ public enum ProcessStatus {
         public static final int PROCESSING = 0;
         public static final int SUCCESS = 1;
         public static final int FAIL = 2;
+        public static final int FINISH = 3;
     }
 }

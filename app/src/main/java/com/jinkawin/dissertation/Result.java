@@ -1,27 +1,17 @@
 package com.jinkawin.dissertation;
 
 import android.graphics.Bitmap;
-
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
-import java.io.Serializable;
-
-public class Result implements Serializable {
+public class Result {
 
     private Mat frame;
     private int index;
 
-    private ResponseType status;
-
-    public Result(ResponseType status){
-        this.status = status;
-    }
-
     public Result(Mat frame, int index){
         this.frame = frame;
         this.index = index;
-        this.status = ResponseType.DATA;
     }
 
     public Mat getFrame() {
@@ -30,10 +20,6 @@ public class Result implements Serializable {
 
     public int getIndex() {
         return index;
-    }
-
-    public ResponseType getStatus() {
-        return status;
     }
 
     public Bitmap getBitmap(){

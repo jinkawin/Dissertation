@@ -1,5 +1,7 @@
 package com.jinkawin.dissertation;
 
+import android.util.Log;
+
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
@@ -35,7 +37,14 @@ public class ImageProcessorRunnable implements Runnable{
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
         frame = imageProcessor.process(frame);
 
+        Log.d(TAG, "run: " + frame.size().width);
+
+        taskProcessorMethods.setFrame(frame);
+
         // Send information back to the manager
-        taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS, new Result(frame, taskProcessorMethods.getIndex()));
+        taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS);
+
+        // Free thread storage
+        taskProcessorMethods.setThread(null);
     }
 }
