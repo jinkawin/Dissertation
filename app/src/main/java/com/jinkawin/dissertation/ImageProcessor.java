@@ -3,9 +3,6 @@ package com.jinkawin.dissertation;
 import android.content.Context;
 import android.util.Log;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
@@ -26,8 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.opencv.dnn.Dnn.DNN_BACKEND_OPENCV;
-import static org.opencv.dnn.Dnn.DNN_TARGET_CPU;
+import static org.opencv.dnn.Dnn.*;
+import static org.opencv.dnn.Dnn.*;
 
 public class ImageProcessor {
 
@@ -51,7 +48,6 @@ public class ImageProcessor {
     private Context context;
 
     private Net network;
-    private List<String> layerNetwork;
     private List<String> labels;
 
 
@@ -60,16 +56,20 @@ public class ImageProcessor {
         this.labels = this._readLabels(R.raw.coco_names);
 
         // Initial network
+        // https://docs.opencv.org/3.4/d6/d0f/group__dnn.html#ga186f7d9bfacac8b0ff2e26e2eab02625
         this.network = Dnn.readNetFromDarknet(configUri, weightPath);
         this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
         this.network.setPreferableTarget(DNN_TARGET_CPU);
-
-//        this.layerNetwork = this.network.getLayerNames();
     }
 
     public Mat process(Mat frame){
         Detection detection = this.forwardNetwork(frame);
+
+
+        Long start = System.currentTimeMillis();
         detection = this.determineDistance(detection);
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "determineDistance: Total time: " + ((finish - start)/1000.0) + " seconds");
 
         return detection.getFrame();
     }
@@ -83,6 +83,7 @@ public class ImageProcessor {
      */
     private Detection forwardNetwork(Mat frame){
 
+        Long start1 = System.currentTimeMillis();
         // Initail variables
         ArrayList<Mat> layerOutputs = new ArrayList<>();
         List<String> layersNames = this.network.getUnconnectedOutLayersNames();
@@ -98,7 +99,16 @@ public class ImageProcessor {
         this.network.setInput(blob);
         this.network.forward(layerOutputs, layersNames);
 
-        return this.detectPerson(layerOutputs, frame, false);
+        Long finish1 = System.currentTimeMillis();
+        Log.i(TAG, "Initial: Total time: " + ((finish1 - start1)/1000.0) + " seconds");
+
+
+        Long start2 = System.currentTimeMillis();
+        Detection result = this.detectPerson(layerOutputs, frame, false);
+        Long finish2 = System.currentTimeMillis();
+        Log.i(TAG, "detectPerson: Total time: " + ((finish2 - start2)/1000.0) + " seconds");
+
+        return result;
     }
 
     public Detection determineDistance(Detection detection){
@@ -215,8 +225,6 @@ public class ImageProcessor {
         Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD, NMS_THRESHOLD, indices);
 
         ArrayList<Box> nmsBoxes = new ArrayList<>();
-
-
 
         // Filter only outline that is consisted in indices
         if(indices.size().height > 0) { // If there is at lease 1 index

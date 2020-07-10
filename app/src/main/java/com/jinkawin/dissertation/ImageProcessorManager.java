@@ -94,7 +94,7 @@ public class ImageProcessorManager {
                         }
 
                         // Recycle task for reusing
-                        recycleTask(processorTask);
+//                        recycleTask(processorTask);
 
                         break;
                     default:

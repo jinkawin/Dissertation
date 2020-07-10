@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
 
     public String weightPath;
     public String configPath;
+
+    public Long start;
 
     /**
      * Callback when OpenCV libraries are loaded.
@@ -63,8 +66,9 @@ public class MainActivity extends AppCompatActivity {
 
         setup();
 
-        this.processParallelVideo();
+//        this.processParallelVideo();
 //        this.processVideo();
+        this.processSingleFrame();
 //        this.processImage();
     }
 
@@ -92,31 +96,20 @@ public class MainActivity extends AppCompatActivity {
         Mat frame = new Mat();
 
         /* TODO: Record time */
-        Long start = System.currentTimeMillis();
+        start = System.currentTimeMillis();
         for(int i=0; i<mats.size();i++){
-//        for(int i=0; i<2;i++){
             Log.i(TAG, "frame: " + i + "/" + mats.size());
 
 //            if((i % 2) == 0) {
                 ImageProcessorManager.process(mats.get(i), newSize, i);
 //            }
-
-            //Save frame to video
-//            try {
-//                Bitmap bitmap = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.ARGB_8888);
-//                Utils.matToBitmap(frame, bitmap);
-//                encoder.encodeImage(bitmap);
-//            } catch (IOException e){
-//                Log.e(TAG, "encode: " + e.getMessage());
-//            }
         }
-
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
     }
 
     public void processVideo(){
+        ArrayList<Mat> results = new ArrayList<>();
+
         // Initial
         ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
         VideoManager videoManager = new VideoManager(this);
@@ -152,30 +145,34 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0; i<mats.size();i++){
             Log.i("ImageProcessor", "frame: " + i + "/" + mats.size());
 
-            if((i % 2) == 0) {
+//            if((i % 2) == 0) {
 
-                frame = mats.get(i);
+            frame = mats.get(i);
 
-                // Resize image
-                Imgproc.resize(frame, frame, newSize);
+            // Resize image
+            Imgproc.resize(frame, frame, newSize);
 
-                // Convert rgba to rgb
-                Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-                frame = imageProcessor.process(frame);
-            }
+            // Convert rgba to rgb
+            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+            frame = imageProcessor.process(frame);
+            results.add(frame);
+//            }
+        }
 
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
+
+
+        for (Mat result:results) {
             //Save frame to video
             try {
-                Bitmap bitmap = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(frame, bitmap);
+                Bitmap bitmap = Bitmap.createBitmap(result.width(), result.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(result, bitmap);
                 encoder.encodeImage(bitmap);
             } catch (IOException e){
                 Log.e(TAG, "encode: " + e.getMessage());
             }
         }
-
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
         try {
             encoder.finish();
@@ -183,6 +180,37 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, e.getMessage());
         }
         NIOUtils.closeQuietly(out);
+    }
+
+    public void processSingleFrame(){
+        // Initial
+        ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
+        VideoManager videoManager = new VideoManager(this);
+
+        // Read Video from RAW Folder
+        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
+
+        // Calculate new size
+        Size ogSize = mats.get(0).size();
+        double ratio = ogSize.width/WIDTH;
+        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+
+        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
+
+        /* TODO: Record time */
+        Long start = System.currentTimeMillis();
+
+        Mat frame = mats.get(0);
+
+        // Resize image
+        Imgproc.resize(frame, frame, newSize);
+
+        // Convert rgba to rgb
+        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
+        frame = imageProcessor.process(frame);
+
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
     }
 
     public void processImage(){
@@ -195,7 +223,11 @@ public class MainActivity extends AppCompatActivity {
 
         Imgproc.cvtColor(image, image, Imgproc.COLOR_RGBA2RGB);
 
+
+        start = System.currentTimeMillis();
         Mat mat = imageProcessor.process(image);
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
         Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
         Utils.matToBitmap(mat, savedImage);
@@ -224,7 +256,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "saveVideo: " + ioe.getMessage());
             }
 
+            Long finish = System.currentTimeMillis();
+            Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
+
             // TODO: sort array
+            Collections.sort(results, new ResultComparator());
             Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
 
             // encode to video
