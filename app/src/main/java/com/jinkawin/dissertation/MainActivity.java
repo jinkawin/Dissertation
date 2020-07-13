@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -38,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
 
     public ProcessorBroadcastReceiver receiver;
 
+    public ImageProcessor imageProcessor;
+
     public String saveVideoPath;
 
     public String weightPath;
@@ -64,24 +65,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setup();
+//        setup(ModelType.YOLO);
+        setup(ModelType.SSD);
 
 //        this.processParallelVideo();
-//        this.processVideo();
-        this.processSingleFrame();
+        this.processVideo();
+//        this.processSingleFrame();
 //        this.processImage();
     }
 
-    public void processParallelVideo(){
+    public void processSingleFrame(){
         // Initial
         VideoManager videoManager = new VideoManager(this);
-
-        // Register receiver
-        receiver = new ProcessorBroadcastReceiver();
-        this.registerReceiver(this.receiver, new IntentFilter(ProcessorBroadcastReceiver.ACTION));
-
-        // Init context for broadcasting and setup ImageProcessor
-        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
 
         // Read Video from RAW Folder
         ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
@@ -93,25 +88,57 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
 
-        Mat frame = new Mat();
+        Mat frame = mats.get(0);
 
-        /* TODO: Record time */
-        start = System.currentTimeMillis();
-        for(int i=0; i<mats.size();i++){
-            Log.i(TAG, "frame: " + i + "/" + mats.size());
+        // Resize image
+        Imgproc.resize(frame, frame, newSize);
 
-//            if((i % 2) == 0) {
-                ImageProcessorManager.process(mats.get(i), newSize, i);
-//            }
-        }
+        frame = imageProcessor.process(frame);
 
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
     }
 
+
+//    public void processParallelVideo(){
+//        // Initial
+//        VideoManager videoManager = new VideoManager(this);
+//
+//        // Register receiver
+//        receiver = new ProcessorBroadcastReceiver();
+//        this.registerReceiver(this.receiver, new IntentFilter(ProcessorBroadcastReceiver.ACTION));
+//
+//        // Init context for broadcasting and setup ImageProcessor
+//        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
+//
+//        // Read Video from RAW Folder
+//        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
+//
+//        // Calculate new size
+//        Size ogSize = mats.get(0).size();
+//        double ratio = ogSize.width/WIDTH;
+//        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+//
+//        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
+//
+//        Mat frame = new Mat();
+//
+//        /* TODO: Record time */
+//        start = System.currentTimeMillis();
+//        for(int i=0; i<mats.size();i++){
+//            Log.i(TAG, "frame: " + i + "/" + mats.size());
+//
+////            if((i % 2) == 0) {
+//                ImageProcessorManager.process(mats.get(i), newSize, i);
+////            }
+//        }
+//
+//    }
+//
     public void processVideo(){
         ArrayList<Mat> results = new ArrayList<>();
 
         // Initial
-        ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
         VideoManager videoManager = new VideoManager(this);
 
         // Init for saving video
@@ -145,18 +172,16 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0; i<mats.size();i++){
             Log.i("ImageProcessor", "frame: " + i + "/" + mats.size());
 
-//            if((i % 2) == 0) {
+            if((i % 2) == 0) {
 
-            frame = mats.get(i);
+                frame = mats.get(i);
 
-            // Resize image
-            Imgproc.resize(frame, frame, newSize);
+                // Resize image
+                Imgproc.resize(frame, frame, newSize);
 
-            // Convert rgba to rgb
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-            frame = imageProcessor.process(frame);
-            results.add(frame);
-//            }
+                frame = this.imageProcessor.process(frame);
+                results.add(frame);
+            }
         }
 
         Long finish = System.currentTimeMillis();
@@ -182,50 +207,15 @@ public class MainActivity extends AppCompatActivity {
         NIOUtils.closeQuietly(out);
     }
 
-    public void processSingleFrame(){
-        // Initial
-        ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
-        VideoManager videoManager = new VideoManager(this);
-
-        // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
-
-        // Calculate new size
-        Size ogSize = mats.get(0).size();
-        double ratio = ogSize.width/WIDTH;
-        Size newSize = new Size(WIDTH, ogSize.height/ratio);
-
-        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
-
-        /* TODO: Record time */
-        Long start = System.currentTimeMillis();
-
-        Mat frame = mats.get(0);
-
-        // Resize image
-        Imgproc.resize(frame, frame, newSize);
-
-        // Convert rgba to rgb
-        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-        frame = imageProcessor.process(frame);
-
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
-    }
-
     public void processImage(){
 
         // Initial
-        ImageProcessor imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath);
         ImageReader imageReader = new ImageReader(this);
 
         Mat image = imageReader.readImage(R.raw.picturte_test, "picture_test.jpg");
 
-        Imgproc.cvtColor(image, image, Imgproc.COLOR_RGBA2RGB);
-
-
-        start = System.currentTimeMillis();
-        Mat mat = imageProcessor.process(image);
+        Long start = System.currentTimeMillis();
+        Mat mat = this.imageProcessor.process(image);
         Long finish = System.currentTimeMillis();
         Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
@@ -233,7 +223,6 @@ public class MainActivity extends AppCompatActivity {
         Utils.matToBitmap(mat, savedImage);
         MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
-
 
     public class ProcessorBroadcastReceiver extends BroadcastReceiver {
         public static final String ACTION = "com.jinkawin.dissertation.SEND_PROCESS";
@@ -281,15 +270,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setup(){
+    public void setup(ModelType type){
+        // Load opencv4android lib
         loadOpenCV();
 
         this.saveVideoPath = this.getExternalMediaDirs()[0].getAbsolutePath();
 
         // Read and copy files to internal storage
+        switch (type){
+            case SSD:
+                _readSSD();
+                break;
+            case YOLO:
+                _readYOLO();
+                break;
+            default:
+                type = ModelType.SSD;
+                _readSSD();
+        }
+
+        // Initial
+        this.imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath, type);
+    }
+
+    private void _readYOLO(){
+        // Read and copy files to internal storage
         FileUtility fileUtility = new FileUtility(this);
         this.weightPath = fileUtility.readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
         this.configPath = fileUtility.readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
+
+    }
+
+    private void _readSSD(){
+        // Read and copy files to internal storage
+        FileUtility fileUtility = new FileUtility(this);
+        this.weightPath = fileUtility.readAndCopyFile(R.raw.mobilenetssd_weight, "mobilenetssd_weight.caffemodel");
+        this.configPath = fileUtility.readAndCopyFile(R.raw.mobilenetssd_config, "mobilenetssd_config.prototxt");
     }
 
     /**
