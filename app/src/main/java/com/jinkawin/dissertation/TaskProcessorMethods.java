@@ -23,4 +23,6 @@ public interface TaskProcessorMethods {
     String getConfigPath();
 
     Context getContext();
+
+    ModelType getModel();
 }

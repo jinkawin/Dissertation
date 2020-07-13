@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -46,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
 
     public Long start;
 
+    public ModelType modelType = ModelType.SSD;
+
     /**
      * Callback when OpenCV libraries are loaded.
      */
@@ -65,11 +68,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        setup(ModelType.YOLO);
-        setup(ModelType.SSD);
+        setup(this.modelType);
 
-//        this.processParallelVideo();
-        this.processVideo();
+        this.processParallelVideo();
+//        this.processVideo();
 //        this.processSingleFrame();
 //        this.processImage();
     }
@@ -100,41 +102,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    public void processParallelVideo(){
-//        // Initial
-//        VideoManager videoManager = new VideoManager(this);
-//
-//        // Register receiver
-//        receiver = new ProcessorBroadcastReceiver();
-//        this.registerReceiver(this.receiver, new IntentFilter(ProcessorBroadcastReceiver.ACTION));
-//
-//        // Init context for broadcasting and setup ImageProcessor
-//        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
-//
-//        // Read Video from RAW Folder
-//        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
-//
-//        // Calculate new size
-//        Size ogSize = mats.get(0).size();
-//        double ratio = ogSize.width/WIDTH;
-//        Size newSize = new Size(WIDTH, ogSize.height/ratio);
-//
-//        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
-//
-//        Mat frame = new Mat();
-//
-//        /* TODO: Record time */
-//        start = System.currentTimeMillis();
-//        for(int i=0; i<mats.size();i++){
-//            Log.i(TAG, "frame: " + i + "/" + mats.size());
-//
-////            if((i % 2) == 0) {
-//                ImageProcessorManager.process(mats.get(i), newSize, i);
-////            }
-//        }
-//
-//    }
-//
+    public void processParallelVideo(){
+        // Initial
+        VideoManager videoManager = new VideoManager(this);
+
+        // Register receiver
+        receiver = new ProcessorBroadcastReceiver();
+        this.registerReceiver(this.receiver, new IntentFilter(ProcessorBroadcastReceiver.ACTION));
+
+        // Init context for broadcasting and setup ImageProcessor
+        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
+
+        // Read Video from RAW Folder
+        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
+
+        // Calculate new size
+        Size ogSize = mats.get(0).size();
+        double ratio = ogSize.width/WIDTH;
+        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+
+        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
+
+        Mat frame = new Mat();
+
+        /* TODO: Record time */
+        start = System.currentTimeMillis();
+        for(int i=0; i<mats.size();i++){
+            Log.i(TAG, "frame: " + i + "/" + mats.size());
+
+//            if((i % 2) == 0) {
+                ImageProcessorManager.process(mats.get(i), newSize, i, this.modelType);
+//            }
+        }
+
+    }
+
     public void processVideo(){
         ArrayList<Mat> results = new ArrayList<>();
 

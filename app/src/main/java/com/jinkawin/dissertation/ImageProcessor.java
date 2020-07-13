@@ -43,17 +43,9 @@ public class ImageProcessor {
     private static final float NMS_THRESHOLD = 0.3f;
     private static final double MEAN_VAL = 127.5;
 
-
     private static final Scalar COLOUR_WHITE = new Scalar(255, 255, 255);
     private static final Scalar COLOUR_GREEN = new Scalar(0, 255, 0);
     private static final Scalar COLOUR_RED = new Scalar(255, 0, 0);
-
-    private static final String[] classNames = {"background",
-            "aeroplane", "bicycle", "bird", "boat",
-            "bottle", "bus", "car", "cat", "chair",
-            "cow", "diningtable", "dog", "horse",
-            "motorbike", "person", "pottedplant",
-            "sheep", "sofa", "train", "tvmonitor"};
 
     private Context context;
 
@@ -338,7 +330,6 @@ public class ImageProcessor {
                 int right  = (int)(detection.get(i, 5)[0] * cols);
                 int bottom = (int)(detection.get(i, 6)[0] * rows);
 
-                Log.i(TAG, "_detectPerson_SSD: left: " + left + ", right: " + right + ", top: " + top + ", bottom: " + bottom);
                 Rect _rect = new Rect(new Point(left, top), new Point(right, bottom));
 
                 // Initial box over detected object

@@ -17,30 +17,33 @@ public class ImageProcessorRunnable implements Runnable{
     
     @Override
     public void run() {
-//        taskProcessorMethods.setThread(Thread.currentThread());
-//
-//        // Moves the current Thread into the background
-//        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-//
-//        // Initial ImagePrcessor
-//        ImageProcessor imageProcessor = new ImageProcessor(taskProcessorMethods.getContext(), taskProcessorMethods.getWeightPath(), taskProcessorMethods.getConfigPath());
-//
-//        // Get target frame
-//        Mat frame = taskProcessorMethods.getFrame();
-//
-//        // Resize image
-//        Imgproc.resize(frame, frame, taskProcessorMethods.getSize());
-//
-//        // Convert rgba to rgb
-//        Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
-//        frame = imageProcessor.process(frame);
-//
-//        taskProcessorMethods.setFrame(frame);
-//
-//        // Send information back to the manager
-//        taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS);
-//
-//        // Free thread storage
-////        taskProcessorMethods.setThread(null);
+        taskProcessorMethods.setThread(Thread.currentThread());
+
+        // Moves the current Thread into the background
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+
+        // Initial ImagePrcessor
+        ImageProcessor imageProcessor = new ImageProcessor(
+                taskProcessorMethods.getContext(),
+                taskProcessorMethods.getWeightPath(),
+                taskProcessorMethods.getConfigPath(),
+                taskProcessorMethods.getModel());
+
+        // Get target frame
+        Mat frame = taskProcessorMethods.getFrame();
+
+        // Resize image
+        Imgproc.resize(frame, frame, taskProcessorMethods.getSize());
+
+        // Convert rgba to rgb
+        frame = imageProcessor.process(frame);
+
+        taskProcessorMethods.setFrame(frame);
+
+        // Send information back to the manager
+        taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS);
+
+        // Free thread storage
+//        taskProcessorMethods.setThread(null);
     }
 }

@@ -20,17 +20,19 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     private Size size;
     private String weightPath;
     private String configPath;
+    private ModelType model;
 
     public ImageProcessorTask(){
         instance = ImageProcessorManager.getInstance();
         imageProcessorRunnable = new ImageProcessorRunnable(this);
     }
 
-    public void initTask(Context context, Mat frame, Size newSize, int index, String weightPath, String configPath){
+    public void initTask(Context context, Mat frame, Size newSize, int index, String weightPath, String configPath, ModelType model){
         this.context = context;
         this.frame = frame;
         this.size = newSize;
         this.index = index;
+        this.model = model;
 
         this.weightPath = weightPath;
         this.configPath = configPath;
@@ -108,6 +110,11 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     @Override
     public Context getContext() {
         return context;
+    }
+
+    @Override
+    public ModelType getModel() {
+        return this.model;
     }
 
 }

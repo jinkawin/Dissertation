@@ -104,7 +104,7 @@ public class ImageProcessorManager {
         };
     }
 
-    public static ImageProcessorTask process(Mat frame, Size size, int index){
+    public static ImageProcessorTask process(Mat frame, Size size, int index, ModelType model){
         Log.i(TAG, "process: Start process index:  " + index);
         inputCount++;
         Log.i(TAG, "process: Count: " + inputCount);
@@ -118,7 +118,7 @@ public class ImageProcessorManager {
         }
 
         // Intial task
-        processorTask.initTask(context, frame, size, index, weightPath, configPath);
+        processorTask.initTask(context, frame, size, index, weightPath, configPath, model);
 
         // Start processing image
         instance.processorThreadPool.execute(processorTask.getImageProcessorRunnable());
