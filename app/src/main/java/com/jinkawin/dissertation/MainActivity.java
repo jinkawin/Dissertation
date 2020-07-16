@@ -78,18 +78,18 @@ public class MainActivity extends AppCompatActivity {
 
 //        setup(this.modelType);
 //
-//        this.processParallelVideo();
-//        this.processVideo();
-//        this.processSingleFrame();
-//        this.processImage();
+//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+//        this.processVideo(R.raw.video_test, "video_test.mp4");
+//        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
+//        this.processImage(R.raw.picturte_test, "picture_test.jpg");
     }
 
-    public void processSingleFrame(){
+    public void processSingleFrame(int rId, String name){
         // Initial
         VideoManager videoManager = new VideoManager(this);
 
         // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
+        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void processParallelVideo(){
+    public void processParallelVideo(int rId, String name){
         // Initial
         VideoManager videoManager = new VideoManager(this);
 
@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
         ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
 
         // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_6, "video_6.mp4");
+        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void processVideo(){
+    public void processVideo(int rId, String name){
         ArrayList<Mat> results = new ArrayList<>();
 
         // Initial
@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
+        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
@@ -217,12 +217,12 @@ public class MainActivity extends AppCompatActivity {
         NIOUtils.closeQuietly(out);
     }
 
-    public void processImage(){
+    public void processImage(int rId, String name){
 
         // Initial
         ImageReader imageReader = new ImageReader(this);
 
-        Mat image = imageReader.readImage(R.raw.picturte_test, "picture_test.jpg");
+        Mat image = imageReader.readImage(rId, name);
 
         // Calculate new size
 //        Size ogSize = image.size();
