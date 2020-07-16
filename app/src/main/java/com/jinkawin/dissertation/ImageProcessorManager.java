@@ -24,8 +24,14 @@ public class ImageProcessorManager {
     private static final String TAG = "ImageProcessorManager";
 
     // Get number of avialble CPU's cores
-    private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
-    private static int MAXIMUM_CORES = Runtime.getRuntime().availableProcessors();
+//    private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
+//    private static int MAXIMUM_CORES = Runtime.getRuntime().availableProcessors();
+
+    private static int NUMBER_OF_CORES = 8;
+    private static int MAXIMUM_CORES = 8;
+
+    // Set the maximum thread per single core (Concurrent)
+    private static int THREAD_PER_CORE = 2;
 
     // Sets the amount of time an idle thread will wait for a task before terminating
     private static final int KEEP_ALIVE_TIME = 1;
@@ -75,6 +81,8 @@ public class ImageProcessorManager {
         this.processorQueue = new LinkedBlockingQueue<Runnable>();
         this.taskQueue = new LinkedBlockingQueue<ImageProcessorTask>();
 
+        Log.i(TAG, "ImageProcessorManager: Cores: "+ NUMBER_OF_CORES);
+
         // Create threads pool
         this.processorThreadPool = new ThreadPoolExecutor(NUMBER_OF_CORES, MAXIMUM_CORES, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, this.processorQueue);
 
@@ -93,13 +101,13 @@ public class ImageProcessorManager {
                             noticeMainActivity();
                         }
 
-                        // Recycle task for reusing
-//                        recycleTask(processorTask);
-
                         break;
                     default:
                         Log.i(TAG, "handleMessage: default");
                 }
+
+                // Recycle task for reusing
+                recycleTask(processorTask);
             }
         };
     }
@@ -122,9 +130,6 @@ public class ImageProcessorManager {
 
         // Start processing image
         instance.processorThreadPool.execute(processorTask.getImageProcessorRunnable());
-
-        // Send message that task are done
-//        instance.handleState(ProcessStatus.SUCCESS, new Result(ResponseType.FINISH));
 
         return processorTask;
     }

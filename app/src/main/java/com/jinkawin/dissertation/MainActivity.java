@@ -63,14 +63,22 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    static {
+        System.loadLibrary("dummy-lib");
+    }
+
+    public native String helloWorld();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setup(this.modelType);
+        Log.i(TAG, "onCreate: " + helloWorld());
 
-        this.processParallelVideo();
+//        setup(this.modelType);
+//
+//        this.processParallelVideo();
 //        this.processVideo();
 //        this.processSingleFrame();
 //        this.processImage();
@@ -114,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
         ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
 
         // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_test, "video_test.mp4");
+        ArrayList<Mat> mats = videoManager.readVideo(R.raw.video_6, "video_6.mp4");
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
@@ -216,6 +224,13 @@ public class MainActivity extends AppCompatActivity {
 
         Mat image = imageReader.readImage(R.raw.picturte_test, "picture_test.jpg");
 
+        // Calculate new size
+//        Size ogSize = image.size();
+//        double ratio = ogSize.width/WIDTH;
+//        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+//        Imgproc.resize(image, image, newSize);
+//        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
+
         Long start = System.currentTimeMillis();
         Mat mat = this.imageProcessor.process(image);
         Long finish = System.currentTimeMillis();
@@ -269,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, e.getMessage());
             }
             NIOUtils.closeQuietly(out);
+            Log.i(TAG, "onReceive: Finished");
         }
     }
 
