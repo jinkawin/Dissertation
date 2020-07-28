@@ -1,5 +1,6 @@
 package com.jinkawin.dissertation;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.BroadcastReceiver;
@@ -7,9 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 import org.jcodec.api.android.AndroidSequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
@@ -23,8 +28,10 @@ import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     public ProcessorBroadcastReceiver receiver;
 
     public ImageProcessor imageProcessor;
+    public TestImageProcessor testImageProcessor;
 
     public String saveVideoPath;
 
@@ -64,24 +72,94 @@ public class MainActivity extends AppCompatActivity {
     };
 
     static {
-        System.loadLibrary("dummy-lib");
+        System.loadLibrary("native-lib");
     }
 
-    public native String helloWorld();
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Uri uploadfileuri = data.getData();
+        File file = new File(uploadfileuri.getPath());
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Log.i(TAG, "onCreate: " + helloWorld());
+        setup(this.modelType);
 
-//        setup(this.modelType);
+//        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
+        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
+
+//        Button btnStart = (Button) findViewById(R.id.btnStart);
+//        btnStart.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                // It seems thread are run in sequencial
+//                // The second thread will be started when the first thread is finished.
+//                // And the second thread is not consistency run, the second thread is blocked (is switched).
+////                processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 1");
+////                processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 2");
+////                processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 3");
 //
-//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+////                processVideo(R.raw.video_test, "video_test.mp4");
+//
+//            }
+//        });
+
 //        this.processVideo(R.raw.video_test, "video_test.mp4");
 //        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
 //        this.processImage(R.raw.picturte_test, "picture_test.jpg");
+//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+    }
+
+    public void processNativeImage(int rId, String name){
+        // Initial
+        ImageReader imageReader = new ImageReader(this);
+
+        Mat image = imageReader.readImage(rId, name);
+
+        NativeLib.process(image.getNativeObjAddr(), this.weightPath, this.configPath);
+
+//        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
+//        Utils.matToBitmap(image, savedImage);
+//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+    }
+
+    public void processSingleFrameTest(int rId, String name, String threadName){
+        // Initial
+        VideoManager videoManager = new VideoManager(this);
+
+        // Read Video from RAW Folder
+        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
+
+        // Calculate new size
+        Size ogSize = mats.get(0).size();
+        double ratio = ogSize.width/WIDTH;
+        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+
+        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
+
+        final Mat frame = mats.get(0);
+
+        // Resize image
+        Imgproc.resize(frame, frame, newSize);
+
+        start = System.currentTimeMillis();
+        Thread t1 = new Thread(new Runnable() {
+            @Override public void run() {
+                Long start = System.currentTimeMillis();
+                testImageProcessor.process(frame, weightPath, configPath);
+                Long finish = System.currentTimeMillis();
+                Log.i(TAG, "Process time: " + ((finish - start)/1000.0) + " seconds");
+            }
+        });
+        t1.setName(threadName);
+        t1.start();
+
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
     }
 
     public void processSingleFrame(int rId, String name){
@@ -109,7 +187,6 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
     }
 
-
     public void processParallelVideo(int rId, String name){
         // Initial
         VideoManager videoManager = new VideoManager(this);
@@ -129,17 +206,17 @@ public class MainActivity extends AppCompatActivity {
         double ratio = ogSize.width/WIDTH;
         Size newSize = new Size(WIDTH, ogSize.height/ratio);
 
-        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
+//        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
 
         Mat frame = new Mat();
 
         /* TODO: Record time */
         start = System.currentTimeMillis();
         for(int i=0; i<mats.size();i++){
-            Log.i(TAG, "frame: " + i + "/" + mats.size());
+//            Log.i(TAG, "frame: " + i + "/" + mats.size());
 
 //            if((i % 2) == 0) {
-                ImageProcessorManager.process(mats.get(i), newSize, i, this.modelType);
+            ImageProcessorManager.process(mats.get(i), newSize, i, this.modelType);
 //            }
         }
 
@@ -309,6 +386,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Initial
         this.imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath, type);
+        this.testImageProcessor = new TestImageProcessor();
     }
 
     private void _readYOLO(){

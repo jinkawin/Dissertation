@@ -27,11 +27,8 @@ public class ImageProcessorManager {
 //    private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
 //    private static int MAXIMUM_CORES = Runtime.getRuntime().availableProcessors();
 
-    private static int NUMBER_OF_CORES = 8;
-    private static int MAXIMUM_CORES = 8;
-
-    // Set the maximum thread per single core (Concurrent)
-    private static int THREAD_PER_CORE = 2;
+    private static int NUMBER_OF_CORES = 2;
+    private static int MAXIMUM_CORES = 2;
 
     // Sets the amount of time an idle thread will wait for a task before terminating
     private static final int KEEP_ALIVE_TIME = 1;
@@ -75,13 +72,9 @@ public class ImageProcessorManager {
 
 
     private ImageProcessorManager(){
-        Log.i(TAG, "ImageProcessorManager: Constructor created");
-
         // Initial Queue
         this.processorQueue = new LinkedBlockingQueue<Runnable>();
         this.taskQueue = new LinkedBlockingQueue<ImageProcessorTask>();
-
-        Log.i(TAG, "ImageProcessorManager: Cores: "+ NUMBER_OF_CORES);
 
         // Create threads pool
         this.processorThreadPool = new ThreadPoolExecutor(NUMBER_OF_CORES, MAXIMUM_CORES, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, this.processorQueue);
@@ -93,17 +86,15 @@ public class ImageProcessorManager {
 
                 switch (ProcessStatus.intToEnum(msg.what)){
                     case SUCCESS:
-                        Log.i(TAG, "handleMessage: Result is added: " + results.size());
                         results.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
 
                         if(results.size() == inputCount){
-                            Log.i(TAG, "handleMessage: All threads are done");
                             noticeMainActivity();
                         }
 
                         break;
                     default:
-                        Log.i(TAG, "handleMessage: default");
+//                        Log.i(TAG, "handleMessage: default");
                 }
 
                 // Recycle task for reusing
@@ -113,9 +104,9 @@ public class ImageProcessorManager {
     }
 
     public static ImageProcessorTask process(Mat frame, Size size, int index, ModelType model){
-        Log.i(TAG, "process: Start process index:  " + index);
+//        Log.i(TAG, "process: Start process index:  " + index);
         inputCount++;
-        Log.i(TAG, "process: Count: " + inputCount);
+//        Log.i(TAG, "process: Count: " + inputCount);
 
         // Try to get and deque the queue
         ImageProcessorTask processorTask = instance.taskQueue.poll();
@@ -145,7 +136,6 @@ public class ImageProcessorManager {
 
     // Send results back to the main activity by broadcasting
     private void noticeMainActivity(){
-        Log.i(TAG, "noticeMainActivity: Noticing...");
         Intent intent = new Intent();
         intent.setAction(MainActivity.ProcessorBroadcastReceiver.ACTION);
         intent.putExtra("data", ProcessStatus.FINISH);

@@ -3,6 +3,7 @@ package com.jinkawin.dissertation;
 import android.content.Context;
 import android.util.Log;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
@@ -124,9 +125,10 @@ public class ImageProcessor {
         Boolean[] statuses = new Boolean[nmsBoxes.size()];
         Arrays.fill(statuses, false);
 
+        int nmsBoxSize = nmsBoxes.size();
         // Check distance between coupled object
-        for (int i=0; i<nmsBoxes.size(); i++){
-            for (int j=i+1; j<nmsBoxes.size(); j++){
+        for (int i=0; i<nmsBoxSize; i++){
+            for (int j=i+1; j<nmsBoxSize; j++){
                 Boolean status = sdd.checkDistance(nmsBoxes.get(i).getPoint(), nmsBoxes.get(j).getPoint());
                 statuses[i] |= status;
                 statuses[j] |= status;
@@ -134,7 +136,8 @@ public class ImageProcessor {
         }
 
         // Draw box over detected object
-        for(int i=0; i<statuses.length; i++){
+        int statusSize = statuses.length;
+        for(int i=0; i<statusSize; i++){
             Scalar colour = statuses[i]?COLOUR_RED:COLOUR_GREEN;
 
             Imgproc.rectangle(
@@ -167,7 +170,7 @@ public class ImageProcessor {
                 labels.add(line);
 
         }catch (IOException e) {
-            Log.i(TAG, "Cannot read classification file");
+//            Log.i(TAG, "Cannot read classification file");
         }
 
         return labels;
@@ -196,7 +199,7 @@ public class ImageProcessor {
         this.network.forward(layerOutputs, layersNames);
 
         Long finish = System.currentTimeMillis();
-        Log.i(TAG, "_processSSD: Total time: " + ((finish - start)/1000.0) + " seconds");
+//        Log.i(TAG, "_processSSD: Total time: " + ((finish - start)/1000.0) + " seconds");
 
         return this._detectPerson_Yolo(layerOutputs, frame, false);
     }
@@ -291,7 +294,8 @@ public class ImageProcessor {
     private Detection _processSSD(Mat frame){
 
         // Process
-        Mat blob = Dnn.blobFromImage(frame, SCALE_FACTOR, new Size(WIDTH, HEIGHT), new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), false, false); // size = (1, 4, 416, 416)
+//        Mat blob = Dnn.blobFromImage(frame, SCALE_FACTOR, new Size(WIDTH, HEIGHT), new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), false, false); // size = (1, 4, 416, 416)
+        Mat blob = Dnn.blobFromImage(frame, SCALE_FACTOR); // Faster
 
         this.network.setInput(blob);
 
@@ -319,7 +323,7 @@ public class ImageProcessor {
 
         detection = detection.reshape(1, (int)detection.total() / 7);
 
-        for (int i = 0; i < detection.rows(); ++i) {
+        for (int i = 0; i < detection.rows(); i++) {
             double confidence = detection.get(i, 2)[0];
             int classId = (int)detection.get(i, 1)[0];
 

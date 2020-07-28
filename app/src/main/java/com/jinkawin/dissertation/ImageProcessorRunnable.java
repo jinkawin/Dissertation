@@ -1,12 +1,12 @@
 package com.jinkawin.dissertation;
 
+import android.util.Log;
+
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
 public class ImageProcessorRunnable implements Runnable{
     private static final String TAG = "ImageProcessorRunnable";
-
-    public static final int WIDTH = 480;
 
     public TaskProcessorMethods taskProcessorMethods;
 
@@ -17,10 +17,11 @@ public class ImageProcessorRunnable implements Runnable{
     
     @Override
     public void run() {
+//        Log.i(TAG, "run: index " + taskProcessorMethods.getIndex() + " is started");
         taskProcessorMethods.setThread(Thread.currentThread());
 
         // Moves the current Thread into the background
-        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
 
         // Initial ImagePrcessor
         ImageProcessor imageProcessor = new ImageProcessor(
@@ -35,13 +36,14 @@ public class ImageProcessorRunnable implements Runnable{
         // Resize image
         Imgproc.resize(frame, frame, taskProcessorMethods.getSize());
 
-        // Convert rgba to rgb
         frame = imageProcessor.process(frame);
 
         taskProcessorMethods.setFrame(frame);
 
         // Send information back to the manager
         taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS);
+
+//        Log.i(TAG, "run: index " + taskProcessorMethods.getIndex() + " is finished");
 
         // Free thread storage
 //        taskProcessorMethods.setThread(null);
