@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.4.1)
 
+if(ANDROID_ABI STREQUAL armeabi-v7a)
+    set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS -mfpu=neon)
+endif()
+
+
 set(CMAKE_VERBOSE_MAKEFILE on)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 

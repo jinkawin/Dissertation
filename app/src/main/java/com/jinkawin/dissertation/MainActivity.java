@@ -120,11 +120,16 @@ public class MainActivity extends AppCompatActivity {
 
         Mat image = imageReader.readImage(rId, name);
 
+        Long start = System.currentTimeMillis();
         NativeLib.process(image.getNativeObjAddr(), this.weightPath, this.configPath);
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
-//        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
-//        Utils.matToBitmap(image, savedImage);
-//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+        Log.i(TAG, "processNativeImage: Size: " + image.size().width + ", " + image.size().height);
+
+        Bitmap savedImage = Bitmap.createBitmap(image.width(), image.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(image, savedImage);
+        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 
     public void processSingleFrameTest(int rId, String name, String threadName){
@@ -313,9 +318,11 @@ public class MainActivity extends AppCompatActivity {
         Long finish = System.currentTimeMillis();
         Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
-        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
-        Utils.matToBitmap(mat, savedImage);
-        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+        Log.i(TAG, "processImage: Size: " + image.size().width + " x " + image.size().height);
+
+//        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
+//        Utils.matToBitmap(mat, savedImage);
+//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 
     public class ProcessorBroadcastReceiver extends BroadcastReceiver {

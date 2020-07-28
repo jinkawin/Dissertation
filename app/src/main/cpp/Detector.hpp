@@ -44,7 +44,7 @@ public:
     const Scalar BLOB_MEAN = Scalar(127.5, 127.5, 127.5);
 
     const Scalar COLOUR_WHITE = Scalar(255, 255, 255);
-    const Scalar COLOUR_RED = Scalar(0, 0, 255);
+    const Scalar COLOUR_RED = Scalar(255, 0, 0);
     const Scalar COLOUR_GREEN = Scalar(0, 255, 0);
 
 private:
@@ -198,7 +198,7 @@ private:
                 break;
         }
 
-//        this->network.setPreferableTarget(DNN_TARGET_OPENCL);
+//        this->network.setPreferableTarget(DNN_TARGET_OPENCL_FP16);
     }
 
     bool checkDistance(Point a, Point b){
