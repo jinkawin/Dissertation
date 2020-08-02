@@ -76,7 +76,6 @@ public class VideoManager {
         return mats;
     }
 
-
     public void saveVideo(ArrayList<Mat> frames, String name){
         File targetFolder = this.context.getExternalMediaDirs()[0];
         SeekableByteChannel out = null;

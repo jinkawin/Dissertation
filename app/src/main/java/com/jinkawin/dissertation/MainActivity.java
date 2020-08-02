@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.annotation.Native;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -90,7 +91,8 @@ public class MainActivity extends AppCompatActivity {
         setup(this.modelType);
 
 //        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
-        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
+//        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
+        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
 
 //        Button btnStart = (Button) findViewById(R.id.btnStart);
 //        btnStart.setOnClickListener(new View.OnClickListener() {
@@ -118,18 +120,39 @@ public class MainActivity extends AppCompatActivity {
         // Initial
         ImageReader imageReader = new ImageReader(this);
 
+        // Read Image
         Mat image = imageReader.readImage(rId, name);
 
-        Long start = System.currentTimeMillis();
+        // Process by using Native lib
         NativeLib.process(image.getNativeObjAddr(), this.weightPath, this.configPath);
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
 
-        Log.i(TAG, "processNativeImage: Size: " + image.size().width + ", " + image.size().height);
-
+        // Save Image
         Bitmap savedImage = Bitmap.createBitmap(image.width(), image.height(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(image, savedImage);
         MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+    }
+
+    public void processNativeParallelVideo(int rId, String name){
+        // Initial
+        VideoManager videoManager = new VideoManager(this);
+
+        // Read Video from RAW Folder
+        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
+
+        // Convert ArrayList of Mat to Array of address
+        long[] addrs = new long[mats.size()];
+        int i = 0;
+        for(Mat mat: mats) {
+            addrs[i] = mats.get(i++).getNativeObjAddr();
+        }
+
+        Log.i(TAG, "processNativeParallelVideo: First element: " + addrs[0]);
+        Log.i(TAG, "processNativeParallelVideo: Second element: " + addrs[1]);
+
+        Long start = System.currentTimeMillis();
+        NativeLib.parallelProcess(addrs, this.weightPath, this.configPath);
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "Process time: " + ((finish - start)/1000.0) + " seconds");
     }
 
     public void processSingleFrameTest(int rId, String name, String threadName){

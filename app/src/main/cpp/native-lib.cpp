@@ -4,10 +4,13 @@
 #include <android/log.h>
 
 #include "Detector.hpp"
+#include "Parallel.hpp"
 
 #define APPNAME "NativeLib"
+#define NUMBER_OF_THREADS 2
 
 string jstring2string(JNIEnv *env, jstring jStr);
+void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats);
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlong matAddr, jstring weightPath, jstring configPath){
@@ -34,6 +37,38 @@ Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlon
 
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Mat Cols: %d", frame.cols);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Mat Rows: %d", frame.rows);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_jinkawin_dissertation_NativeLib_parallelProcess(JNIEnv *env, jobject jObj, jlongArray matAddrs, jstring weightPath, jstring configPath){
+    ModelConfig config;
+
+    // Convert jString to std::string
+    string stringWeightPath = jstring2string(env, weightPath);
+    string stringConfigPath = jstring2string(env, configPath);
+
+    config.model = MODEL::SSD;
+    config.pathWeight = stringWeightPath;
+    config.pathConfig = stringConfigPath;
+
+    // Initial vector with size of jlongArray's size
+    vector<Mat> mats;
+    arrayToVector(env, matAddrs, mats);
+
+    cv::parallel_for_(cv::Range(0, NUMBER_OF_THREADS), Parallel_process(config, mats, NUMBER_OF_THREADS));
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Done");
+}
+
+
+void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats){
+    jsize size = env->GetArrayLength(matAddrs);
+    jlong *value = env->GetLongArrayElements(matAddrs, 0);
+
+    for (int i = 0; i < size; i++) {
+
+        Mat &frame = *(Mat *) value[i];
+        mats.push_back(frame);
+    }
 }
 
 // Credit: https://stackoverflow.com/a/41820336/3239784
