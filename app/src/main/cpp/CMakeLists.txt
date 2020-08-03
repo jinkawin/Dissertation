@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-if(ANDROID_ABI STREQUAL armeabi-v7a)
-    set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS -mfpu=neon)
-endif()
+#if(ANDROID_ABI STREQUAL armeabi-v7a)
+#    set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS -mfpu=neon)
+#endif()
 
+# import cpu-feature.h for NEON
+#include(AndroidNdkModules)
+#android_ndk_import_module_cpufeatures()
 
 set(CMAKE_VERBOSE_MAKEFILE on)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
@@ -38,3 +41,12 @@ target_link_libraries( # Specifies the target library.
         ${log-lib}
 
         lib_opencv)
+
+#target_link_libraries( # Specifies the target library.
+#        native-lib
+#
+#        # Links the target library to the log library
+#        # included in the NDK.
+#        ${log-lib}
+#
+#        cpu_features)

@@ -74,7 +74,7 @@ public:
         int colNum = frame.cols;
 
         // Resize Frame
-        this->resizeFrame(frame, this->WIDTH);
+//        this->resizeFrame(frame, this->WIDTH);
 
         // Convert Colour
         int colour = (this->config.model == YOLO)?this->COLOUR_YOLO:this->COLOUR_SSD;
@@ -86,8 +86,11 @@ public:
         // Set input to the network
         this->network.setInput(blob);
 
+        int64_t start = getTimeNsec();
         // Forward Propagation
         Mat detection = this->network.forward();
+        float diff = (getTimeNsec() - start)/1000000000.0;
+        __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Dnn forward: %lf: ", diff);
 
         // Human Detection
         this->detectPersonSSD(nmsBoxes, detection, frame);
@@ -210,5 +213,11 @@ private:
         }else{
             return false;
         }
+    }
+
+    int64_t getTimeNsec() {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        return (int64_t) now.tv_sec*1000000000LL + now.tv_nsec;
     }
 };

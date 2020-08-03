@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
 //        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
         this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
+//        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
 //        Button btnStart = (Button) findViewById(R.id.btnStart);
 //        btnStart.setOnClickListener(new View.OnClickListener() {
@@ -132,9 +133,23 @@ public class MainActivity extends AppCompatActivity {
         MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 
-    public void processNativeParallelVideo(int rId, String name){
+    public void processNativeVideo(int rId, String name){
         // Initial
         VideoManager videoManager = new VideoManager(this);
+
+        // Init for saving video
+        File targetFolder = this.getExternalMediaDirs()[0];
+        SeekableByteChannel out = null;
+        AndroidSequenceEncoder encoder = null;
+        try {
+            /* TODO: Change save path to Gallery */
+            out = NIOUtils.writableFileChannel(targetFolder.getAbsolutePath() + "/" + System.currentTimeMillis() + ".mp4");
+            encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
+        } catch (FileNotFoundException fe){
+            Log.e(TAG, "saveVideo: " + fe.getMessage());
+        } catch (IOException ioe){
+            Log.e(TAG, "saveVideo: " + ioe.getMessage());
+        }
 
         // Read Video from RAW Folder
         ArrayList<Mat> mats = videoManager.readVideo(rId, name);
@@ -150,9 +165,80 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "processNativeParallelVideo: Second element: " + addrs[1]);
 
         Long start = System.currentTimeMillis();
+        NativeLib.videoProcess(addrs, this.weightPath, this.configPath);
+        Long finish = System.currentTimeMillis();
+        Log.i(TAG, "Process time: " + ((finish - start)/1000.0) + " seconds");
+
+        for (Mat mat:mats) {
+            //Save frame to video
+            try {
+                Bitmap bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(mat, bitmap);
+                encoder.encodeImage(bitmap);
+            } catch (IOException e){
+                Log.e(TAG, "encode: " + e.getMessage());
+            }
+        }
+
+        try {
+            encoder.finish();
+        } catch (IOException e){
+            Log.e(TAG, e.getMessage());
+        }
+        NIOUtils.closeQuietly(out);
+        Log.i(TAG, "Video is saved!");
+    }
+
+    public void processNativeParallelVideo(int rId, String name){
+        // Initial
+        VideoManager videoManager = new VideoManager(this);
+
+        // Init for saving video
+        File targetFolder = this.getExternalMediaDirs()[0];
+        SeekableByteChannel out = null;
+        AndroidSequenceEncoder encoder = null;
+        try {
+            /* TODO: Change save path to Gallery */
+            out = NIOUtils.writableFileChannel(targetFolder.getAbsolutePath() + "/" + System.currentTimeMillis() + ".mp4");
+            encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
+        } catch (FileNotFoundException fe){
+            Log.e(TAG, "saveVideo: " + fe.getMessage());
+        } catch (IOException ioe){
+            Log.e(TAG, "saveVideo: " + ioe.getMessage());
+        }
+
+        // Read Video from RAW Folder
+        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
+
+        // Convert ArrayList of Mat to Array of address
+        long[] addrs = new long[mats.size()];
+        int i = 0;
+        for(Mat mat: mats) {
+            addrs[i] = mats.get(i++).getNativeObjAddr();
+        }
+
+        Long start = System.currentTimeMillis();
         NativeLib.parallelProcess(addrs, this.weightPath, this.configPath);
         Long finish = System.currentTimeMillis();
         Log.i(TAG, "Process time: " + ((finish - start)/1000.0) + " seconds");
+
+        for (Mat mat:mats) {
+            //Save frame to video
+            try {
+                Bitmap bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(mat, bitmap);
+                encoder.encodeImage(bitmap);
+            } catch (IOException e){
+                Log.e(TAG, "encode: " + e.getMessage());
+            }
+        }
+
+        try {
+            encoder.finish();
+        } catch (IOException e){
+            Log.e(TAG, e.getMessage());
+        }
+        NIOUtils.closeQuietly(out);
     }
 
     public void processSingleFrameTest(int rId, String name, String threadName){
@@ -287,7 +373,7 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0; i<mats.size();i++){
             Log.i("ImageProcessor", "frame: " + i + "/" + mats.size());
 
-            if((i % 2) == 0) {
+//            if((i % 2) == 0) {
 
                 frame = mats.get(i);
 
@@ -296,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
 
                 frame = this.imageProcessor.process(frame);
                 results.add(frame);
-            }
+//            }
         }
 
         Long finish = System.currentTimeMillis();

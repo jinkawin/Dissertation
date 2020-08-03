@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <android/log.h>
+//#include <cpu_features/ndk_compat/cpu-features.h>
 
 #include "Detector.hpp"
 #include "Parallel.hpp"
@@ -11,6 +12,7 @@
 
 string jstring2string(JNIEnv *env, jstring jStr);
 void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats);
+int64_t getTimeNsec();
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlong matAddr, jstring weightPath, jstring configPath){
@@ -40,6 +42,30 @@ Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlon
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_jinkawin_dissertation_NativeLib_videoProcess(JNIEnv *env, jobject jObj, jlongArray matAddrs, jstring weightPath, jstring configPath){
+    Detector detector;
+    ModelConfig config;
+
+    // Convert jString to std::string
+    string stringWeightPath = jstring2string(env, weightPath);
+    string stringConfigPath = jstring2string(env, configPath);
+
+    config.model = MODEL::SSD;
+    config.pathWeight = stringWeightPath;
+    config.pathConfig = stringConfigPath;
+    detector.setModelConfig(config);
+
+    jsize size = env->GetArrayLength(matAddrs);
+    jlong *value = env->GetLongArrayElements(matAddrs, 0);
+
+    for (int i = 0; i < size; i++) {
+        Mat &frame = *(Mat *) value[i];
+        detector.process(frame);
+    }
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Done");
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_jinkawin_dissertation_NativeLib_parallelProcess(JNIEnv *env, jobject jObj, jlongArray matAddrs, jstring weightPath, jstring configPath){
     ModelConfig config;
 
@@ -51,14 +77,19 @@ Java_com_jinkawin_dissertation_NativeLib_parallelProcess(JNIEnv *env, jobject jO
     config.pathWeight = stringWeightPath;
     config.pathConfig = stringConfigPath;
 
-    // Initial vector with size of jlongArray's size
-    vector<Mat> mats;
-    arrayToVector(env, matAddrs, mats);
+    jsize size = env->GetArrayLength(matAddrs);
+    jlong *value = env->GetLongArrayElements(matAddrs, 0);
 
-    cv::parallel_for_(cv::Range(0, NUMBER_OF_THREADS), Parallel_process(config, mats, NUMBER_OF_THREADS));
+    cv::parallel_for_(cv::Range(0, NUMBER_OF_THREADS), Parallel_process(config, matAddrs, NUMBER_OF_THREADS, size, value));
+
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Done");
 }
 
+int64_t getTimeNsec() {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (int64_t) now.tv_sec*1000000000LL + now.tv_nsec;
+}
 
 void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats){
     jsize size = env->GetArrayLength(matAddrs);
@@ -71,7 +102,6 @@ void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats){
     }
 }
 
-// Credit: https://stackoverflow.com/a/41820336/3239784
 string jstring2string(JNIEnv *env, jstring _jString) {
 
     // If jString is empty

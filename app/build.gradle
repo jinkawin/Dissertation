@@ -14,7 +14,7 @@ android {
             cmake {
                 cppFlags "-std=c++11"
                 arguments "-DANDROID_STL=c++_shared"
-            }
+        }
         }
     }
     buildTypes {

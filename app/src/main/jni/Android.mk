@@ -20,5 +20,6 @@ LOCAL_MODULE    := hello-jni
 LOCAL_SRC_FILES := hello-jni.c
 LOCAL_LDLIBS := -llog
 LOCAL_ARM_NEON := true
+LOCAL_STATIC_LIBRARIES := cpufeatures
 
 include $(BUILD_SHARED_LIBRARY)
