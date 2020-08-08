@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
 //        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
 //        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
-        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
+//        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
 //        Button btnBrowser = findViewById(R.id.btnBrowser);
 //        btnBrowser.setOnClickListener(new View.OnClickListener() {
@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
 //        this.processVideo(R.raw.video_test, "video_test.mp4");
 //        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
 //        this.processImage(R.raw.picturte_test, "picture_test.jpg");
-//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
     }
 
     public void processNativeImage(int rId, String name){
@@ -339,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
         Mat frame = new Mat();
 
         /* TODO: Record time */
-        start = System.currentTimeMillis();
+        start = Core.getTickCount();
         for(int i=0; i<mats.size();i++){
 //            Log.i(TAG, "frame: " + i + "/" + mats.size());
 
@@ -468,8 +468,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "saveVideo: " + ioe.getMessage());
             }
 
-            Long finish = System.currentTimeMillis();
-            Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
+            Long finish = Core.getTickCount();
+            Log.i(TAG, "processVideo: Total time: " + ((finish - start)/Core.getTickFrequency()) + " seconds");
 
             // TODO: sort array
             Collections.sort(results, new ResultComparator());
