@@ -27,8 +27,8 @@ public class ImageProcessorManager {
 //    private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
 //    private static int MAXIMUM_CORES = Runtime.getRuntime().availableProcessors();
 
-    private static int NUMBER_OF_CORES = 2;
-    private static int MAXIMUM_CORES = 2;
+    private static int NUMBER_OF_CORES = 8;
+    private static int MAXIMUM_CORES = 8;
 
     // Sets the amount of time an idle thread will wait for a task before terminating
     private static final int KEEP_ALIVE_TIME = 1;

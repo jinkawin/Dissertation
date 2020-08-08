@@ -5,7 +5,7 @@ android {
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.jinkawin.dissertation"
-        minSdkVersion 29
+        minSdkVersion 25
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -13,8 +13,10 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++11"
-                arguments "-DANDROID_STL=c++_shared"
-        }
+                arguments "-DANDROID_STL=c++_shared",
+                        "-DANDROID_ARM_NEON=ON",
+                        "DCMAKE_BUILD_TYPE=Release"
+            }
         }
     }
     buildTypes {

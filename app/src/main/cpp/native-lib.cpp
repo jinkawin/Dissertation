@@ -2,17 +2,17 @@
 #include <string>
 #include <iostream>
 #include <android/log.h>
-//#include <cpu_features/ndk_compat/cpu-features.h>
 
 #include "Detector.hpp"
 #include "Parallel.hpp"
 
 #define APPNAME "NativeLib"
-#define NUMBER_OF_THREADS 2
+#define NUMBER_OF_THREADS 8
 
 string jstring2string(JNIEnv *env, jstring jStr);
 void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats);
 int64_t getTimeNsec();
+void cvInfo();
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlong matAddr, jstring weightPath, jstring configPath){
@@ -58,10 +58,13 @@ Java_com_jinkawin_dissertation_NativeLib_videoProcess(JNIEnv *env, jobject jObj,
     jsize size = env->GetArrayLength(matAddrs);
     jlong *value = env->GetLongArrayElements(matAddrs, 0);
 
+    int64 start = cv::getTickCount();
     for (int i = 0; i < size; i++) {
         Mat &frame = *(Mat *) value[i];
         detector.process(frame);
     }
+    float diff = (cv::getTickCount() - start)/cv::getTickFrequency();
+    __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Total: %lf: ", diff);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Done");
 }
 
@@ -80,15 +83,22 @@ Java_com_jinkawin_dissertation_NativeLib_parallelProcess(JNIEnv *env, jobject jO
     jsize size = env->GetArrayLength(matAddrs);
     jlong *value = env->GetLongArrayElements(matAddrs, 0);
 
+    int64 start = cv::getTickCount();
     cv::parallel_for_(cv::Range(0, NUMBER_OF_THREADS), Parallel_process(config, matAddrs, NUMBER_OF_THREADS, size, value));
+    float diff = (cv::getTickCount() - start)/cv::getTickFrequency();
+    __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Total: %lf: ", diff);
 
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Done");
 }
 
-int64_t getTimeNsec() {
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    return (int64_t) now.tv_sec*1000000000LL + now.tv_nsec;
+extern "C" JNIEXPORT void JNICALL
+Java_com_jinkawin_dissertation_NativeLib_getInfo(JNIEnv *env, jobject jObj){
+    const string info = cv::getBuildInformation();
+
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "CV Build Information: %s", info.c_str());
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "CV Build Information: %s", CV_VERSION);
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "CV Build Information: %s", info.c_str());
+
 }
 
 void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats){

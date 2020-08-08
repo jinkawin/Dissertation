@@ -24,6 +24,7 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -40,6 +41,7 @@ import java.util.Collections;
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
+    private static final int MEDIA_PICKER = 0;
     public static final int WIDTH = 480;
 
     public ArrayList<Result> results = new ArrayList<Result>();
@@ -50,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
     public TestImageProcessor testImageProcessor;
 
     public String saveVideoPath;
-
     public String weightPath;
     public String configPath;
 
@@ -88,28 +89,36 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+//        NativeLib.checkNeon();
         setup(this.modelType);
+
+//        Log.i(TAG, "onCreate: " + Core.getBuildInformation());
 
 //        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
-        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
-//        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
+//        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
+        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
-//        Button btnStart = (Button) findViewById(R.id.btnStart);
-//        btnStart.setOnClickListener(new View.OnClickListener() {
+//        Button btnBrowser = findViewById(R.id.btnBrowser);
+//        btnBrowser.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {
-//                // It seems thread are run in sequencial
-//                // The second thread will be started when the first thread is finished.
-//                // And the second thread is not consistency run, the second thread is blocked (is switched).
-////                processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 1");
-////                processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 2");
-////                processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 3");
-//
-////                processVideo(R.raw.video_test, "video_test.mp4");
-//
+//                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//                intent.setType("*/*");
+//                intent.addCategory(Intent.CATEGORY_OPENABLE);
+//                startActivityForResult(intent, MEDIA_PICKER);
 //            }
 //        });
+
+        // It seems thread are run in sequencial
+        // The second thread will be started when the first thread is finished.
+        // And the second thread is not consistency run, the second thread is blocked (is switched).
+
+//        processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 1");
+//        processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 2");
+//        processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 3");
+//        processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
+//        processVideo(R.raw.video_test, "video_test.mp4");
 
 //        this.processVideo(R.raw.video_test, "video_test.mp4");
 //        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
@@ -123,14 +132,19 @@ public class MainActivity extends AppCompatActivity {
 
         // Read Image
         Mat image = imageReader.readImage(rId, name);
+        Log.i(TAG, "processNativeImage");
+
+        Log.i(TAG, "processNativeImage: Mat dims: " + image.dims());
+        Log.i(TAG, "processNativeImage: Mat size: " + image.size());
+        Log.i(TAG, "processNativeImage: Mat channels: " + image.channels());
 
         // Process by using Native lib
         NativeLib.process(image.getNativeObjAddr(), this.weightPath, this.configPath);
 
         // Save Image
-        Bitmap savedImage = Bitmap.createBitmap(image.width(), image.height(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(image, savedImage);
-        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+//        Bitmap savedImage = Bitmap.createBitmap(image.width(), image.height(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(image, savedImage);
+//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 
     public void processNativeVideo(int rId, String name){
@@ -369,7 +383,7 @@ public class MainActivity extends AppCompatActivity {
         Mat frame = new Mat();
 
         /* TODO: Record time */
-        Long start = System.currentTimeMillis();
+        Long start = Core.getTickCount();
         for(int i=0; i<mats.size();i++){
             Log.i("ImageProcessor", "frame: " + i + "/" + mats.size());
 
@@ -385,27 +399,26 @@ public class MainActivity extends AppCompatActivity {
 //            }
         }
 
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
+        Long finish = Core.getTickCount();
+        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/Core.getTickFrequency()) + " seconds");
 
-
-        for (Mat result:results) {
-            //Save frame to video
-            try {
-                Bitmap bitmap = Bitmap.createBitmap(result.width(), result.height(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(result, bitmap);
-                encoder.encodeImage(bitmap);
-            } catch (IOException e){
-                Log.e(TAG, "encode: " + e.getMessage());
-            }
-        }
-
-        try {
-            encoder.finish();
-        } catch (IOException e){
-            Log.e(TAG, e.getMessage());
-        }
-        NIOUtils.closeQuietly(out);
+//        for (Mat result:results) {
+//            //Save frame to video
+//            try {
+//                Bitmap bitmap = Bitmap.createBitmap(result.width(), result.height(), Bitmap.Config.ARGB_8888);
+//                Utils.matToBitmap(result, bitmap);
+//                encoder.encodeImage(bitmap);
+//            } catch (IOException e){
+//                Log.e(TAG, "encode: " + e.getMessage());
+//            }
+//        }
+//
+//        try {
+//            encoder.finish();
+//        } catch (IOException e){
+//            Log.e(TAG, e.getMessage());
+//        }
+//        NIOUtils.closeQuietly(out);
     }
 
     public void processImage(int rId, String name){
@@ -429,9 +442,9 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i(TAG, "processImage: Size: " + image.size().width + " x " + image.size().height);
 
-//        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
-//        Utils.matToBitmap(mat, savedImage);
-//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+        Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
+        Utils.matToBitmap(mat, savedImage);
+        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 
     public class ProcessorBroadcastReceiver extends BroadcastReceiver {
@@ -526,7 +539,8 @@ public class MainActivity extends AppCompatActivity {
     public void loadOpenCV(){
         // If OpenCV's libraries are not loaded
         if(!OpenCVLoader.initDebug()){
-            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, blCallback);
+//            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, blCallback);
+            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, blCallback);
         }else{
             blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }

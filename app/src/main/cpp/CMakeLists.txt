@@ -4,14 +4,13 @@ cmake_minimum_required(VERSION 3.4.1)
 #    set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS -mfpu=neon)
 #endif()
 
-# import cpu-feature.h for NEON
-#include(AndroidNdkModules)
-#android_ndk_import_module_cpufeatures()
-
 set(CMAKE_VERBOSE_MAKEFILE on)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -DANDROID_ARM_NEON=TRUE -mfpu=neon")
 
 include_directories(/Users/2divide3/Documents/Dissertation/Application/Dissertation/app/src/main/jniIncludes)
+add_subdirectory(cpu_features)
+
 
 add_library( # Sets the name of the library.
         native-lib
@@ -24,7 +23,6 @@ add_library( # Sets the name of the library.
 add_library(lib_opencv SHARED IMPORTED)
 
 set_target_properties(lib_opencv PROPERTIES IMPORTED_LOCATION /Users/2divide3/Documents/Dissertation/Application/Dissertation/app/src/main/jniLibs/${ANDROID_ABI}/libopencv_java4.so)
-
 
 find_library( # Sets the name of the path variable.
         log-lib
@@ -42,11 +40,11 @@ target_link_libraries( # Specifies the target library.
 
         lib_opencv)
 
-#target_link_libraries( # Specifies the target library.
-#        native-lib
-#
-#        # Links the target library to the log library
-#        # included in the NDK.
-#        ${log-lib}
-#
-#        cpu_features)
+target_link_libraries( # Specifies the target library.
+        native-lib
+
+        # Links the target library to the log library
+        # included in the NDK.
+        ${log-lib}
+
+        cpu_features)

@@ -16,10 +16,9 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := hello-jni
-LOCAL_SRC_FILES := hello-jni.c
+LOCAL_MODULE    := native-lib
+LOCAL_SRC_FILES := native-lib.cpp
 LOCAL_LDLIBS := -llog
-LOCAL_ARM_NEON := true
-LOCAL_STATIC_LIBRARIES := cpu_features
+#LOCAL_ARM_NEON := true
 
 include $(BUILD_SHARED_LIBRARY)
