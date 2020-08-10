@@ -73,10 +73,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    static {
-        System.loadLibrary("native-lib");
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -96,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
-//        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
+        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
 //        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
 //        Button btnBrowser = findViewById(R.id.btnBrowser);
@@ -123,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 //        this.processVideo(R.raw.video_test, "video_test.mp4");
 //        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
 //        this.processImage(R.raw.picturte_test, "picture_test.jpg");
-        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
     }
 
     public void processNativeImage(int rId, String name){

@@ -86,10 +86,10 @@ public:
         // Set input to the network
         this->network.setInput(blob);
 
-        int64_t start = getTimeNsec();
         // Forward Propagation
+        int64_t start = cv::getTickCount();
         Mat detection = this->network.forward();
-        float diff = (getTimeNsec() - start)/1000000000.0;
+        float diff = (cv::getTickCount() - start)/cv::getTickFrequency();
         __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Dnn forward: %lf: ", diff);
 
         // Human Detection

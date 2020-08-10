@@ -21,9 +21,14 @@ class Parallel_process : public cv::ParallelLoopBody{
             Detector detector;
             detector.setModelConfig(config);
 
+
+            __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Thread: %d", range.end);
+
             for (int i = range.start; i < size; i += threadNo){
                 Mat &frame = *(Mat *) value[i];
                 detector.process(frame);
             }
+
+            __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Thread: %d", range.end);
         }
 };

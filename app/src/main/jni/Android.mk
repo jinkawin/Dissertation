@@ -16,9 +16,17 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+OPENCVROOT := /Users/2divide3/Documents/Dissertation/Application/Dissertation/OpenCV-android-sdk
+OPENCV_INSTALL_MODULES := on
+OPENCV_LIB_TYPE := STATIC
+include /Users/2divide3/Documents/Dissertation/Application/Dissertation/OpenCV-android-sdk/sdk/native/jni/OpenCV.mk
+
 LOCAL_MODULE    := native-lib
 LOCAL_SRC_FILES := native-lib.cpp
 LOCAL_LDLIBS := -llog
-LOCAL_SHARED_LIBRARIES := native-lib
+
+LOCAL_LDLIBS := -lm -llog -ldl -lz
+LOCAL_CPPFLAGS += -fexceptions -frtti -std=c++11
+LOCAL_LDFLAGS += -ljnigraphics
 
 include $(BUILD_SHARED_LIBRARY)

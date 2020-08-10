@@ -79,6 +79,8 @@ public class ImageProcessor {
 
         // https://docs.opencv.org/3.4/d6/d0f/group__dnn.html#ga186f7d9bfacac8b0ff2e26e2eab02625
         this.network = Dnn.readNetFromCaffe(configUri, weightPath);
+//        this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
+//        this.network.setPreferableTarget(DNN_TARGET_OPENCL);
     }
 
     private void _setupDarnet_Yolo3(String weightPath, String configUri){
@@ -87,7 +89,7 @@ public class ImageProcessor {
         // https://docs.opencv.org/3.4/d6/d0f/group__dnn.html#ga186f7d9bfacac8b0ff2e26e2eab02625
         this.network = Dnn.readNetFromDarknet(configUri, weightPath);
         this.network.setPreferableBackend(DNN_BACKEND_OPENCV);
-        this.network.setPreferableTarget(DNN_TARGET_CPU);
+        this.network.setPreferableTarget(DNN_TARGET_OPENCL_FP16);
     }
 
 
