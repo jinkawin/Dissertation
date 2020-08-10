@@ -13,6 +13,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Size;
 
 import java.util.ArrayList;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -48,11 +49,13 @@ public class ImageProcessorManager {
     // For singleton pattern
     private static ImageProcessorManager instance;
 
-    private static ArrayList<Result> results;
+    public static ArrayList<Result> results;
+    public static PriorityQueue<Result> streamResult;
     private static Context context;
     private static int inputCount;
     private static String weightPath;
     private static String configPath;
+    private static boolean isStream;
 
     // Message manager
     private Handler handler;
@@ -70,8 +73,12 @@ public class ImageProcessorManager {
         inputCount = 0;
     }
 
-
+    /**
+     * Constructor for pre-recorded video/image
+     */
     private ImageProcessorManager(){
+        isStream = false;
+
         // Initial Queue
         this.processorQueue = new LinkedBlockingQueue<Runnable>();
         this.taskQueue = new LinkedBlockingQueue<ImageProcessorTask>();
@@ -94,7 +101,43 @@ public class ImageProcessorManager {
 
                         break;
                     default:
-//                        Log.i(TAG, "handleMessage: default");
+                        Log.i(TAG, "handleMessage: default");
+                        break;
+                }
+
+                // Recycle task for reusing
+                recycleTask(processorTask);
+            }
+        };
+    }
+
+    /**
+     * Constuctor for live stream video from camera
+     * @param fps
+     */
+    private ImageProcessorManager(int fps){
+        isStream = true;
+
+        // Initial Queue
+        this.processorQueue = new LinkedBlockingQueue<Runnable>();
+        this.taskQueue = new LinkedBlockingQueue<ImageProcessorTask>();
+
+        // Create threads pool
+        this.processorThreadPool = new ThreadPoolExecutor(NUMBER_OF_CORES, MAXIMUM_CORES, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, this.processorQueue);
+
+        handler = new Handler(Looper.getMainLooper()){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                ImageProcessorTask processorTask = (ImageProcessorTask) msg.obj;
+
+                switch (ProcessStatus.intToEnum(msg.what)){
+                    case SUCCESS:
+                        streamResult.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
+
+                        break;
+                    default:
+                        Log.i(TAG, "handleMessage: default");
+                        break;
                 }
 
                 // Recycle task for reusing
@@ -104,9 +147,7 @@ public class ImageProcessorManager {
     }
 
     public static ImageProcessorTask process(Mat frame, Size size, int index, ModelType model){
-//        Log.i(TAG, "process: Start process index:  " + index);
-        inputCount++;
-//        Log.i(TAG, "process: Count: " + inputCount);
+        if(!isStream) inputCount++;
 
         // Try to get and deque the queue
         ImageProcessorTask processorTask = instance.taskQueue.poll();
@@ -136,10 +177,15 @@ public class ImageProcessorManager {
 
     // Send results back to the main activity by broadcasting
     private void noticeMainActivity(){
-        Intent intent = new Intent();
-        intent.setAction(MainActivity.ProcessorBroadcastReceiver.ACTION);
-        intent.putExtra("data", ProcessStatus.FINISH);
-        context.sendBroadcast(intent);
+        if(isStream){
+
+        }else{
+            Intent intent = new Intent();
+            intent.setAction(MainActivity.ProcessorBroadcastReceiver.ACTION);
+            intent.putExtra("data", ProcessStatus.FINISH);
+            context.sendBroadcast(intent);
+        }
+
     }
 
     public static void setProcessor(Context ct, String _weightPath, String _configPath){

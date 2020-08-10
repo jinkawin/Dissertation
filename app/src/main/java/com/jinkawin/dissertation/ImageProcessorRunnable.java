@@ -17,7 +17,6 @@ public class ImageProcessorRunnable implements Runnable{
     
     @Override
     public void run() {
-//        Log.i(TAG, "run: index " + taskProcessorMethods.getIndex() + " is started");
         taskProcessorMethods.setThread(Thread.currentThread());
 
         // Moves the current Thread into the background

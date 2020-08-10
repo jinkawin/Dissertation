@@ -1,5 +1,8 @@
 package com.jinkawin.dissertation;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -10,26 +13,28 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.PriorityQueue;
 
 public class CameraActivity extends org.opencv.android.CameraActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String TAG = "CameraActivity";
 
-    private static final double FPS = 5.0;
-
+    private static final int FPS = 5;
     private CameraBridgeViewBase cbvCamera;
 
     private long lastTime;
     private int frameCount;
+    private PriorityQueue frameQueue;
 
     private BaseLoaderCallback blCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             if(status == LoaderCallbackInterface.SUCCESS) {
                 Log.i(TAG, "onManagerConnected: Setup OpenCV is done");
-                
+
                 // Init the first time
                 lastTime = Core.getCPUTickCount();
 
@@ -50,6 +55,8 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+
+        frameQueue = new PriorityQueue<Result>(FPS*2, new ResultComparator());
 
         cbvCamera = findViewById(R.id.cbvCamera);
         cbvCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
@@ -91,7 +98,7 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         double diffTime = (currentTime - lastTime)/Core.getTickFrequency();
 
         // return true it is able to process image within FPS
-        return (diffTime > (1/FPS));
+        return (diffTime > (1.0/FPS));
     }
 
     public void loadOpenCV(){
@@ -100,6 +107,22 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, blCallback);
         }else{
             blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        }
+    }
+
+    public class ProcessorBroadcastReceiver extends BroadcastReceiver {
+        public static final String ACTION = "com.jinkawin.dissertation.SEND_PROCESS";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ArrayList<Result> results = ImageProcessorManager.getResults();
+            Log.i(TAG, "onReceive: Result size: " + results.size());
+
+
+            // TODO: sort array
+            Collections.sort(results, new ResultComparator());
+            Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
+
         }
     }
 }

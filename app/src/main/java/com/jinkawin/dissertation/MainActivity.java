@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
-        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
+//        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
 //        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
 //        Button btnBrowser = findViewById(R.id.btnBrowser);
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 //        this.processVideo(R.raw.video_test, "video_test.mp4");
 //        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
 //        this.processImage(R.raw.picturte_test, "picture_test.jpg");
-//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
     }
 
     public void processNativeImage(int rId, String name){
@@ -128,19 +128,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Read Image
         Mat image = imageReader.readImage(rId, name);
-        Log.i(TAG, "processNativeImage");
-
-        Log.i(TAG, "processNativeImage: Mat dims: " + image.dims());
-        Log.i(TAG, "processNativeImage: Mat size: " + image.size());
-        Log.i(TAG, "processNativeImage: Mat channels: " + image.channels());
 
         // Process by using Native lib
         NativeLib.process(image.getNativeObjAddr(), this.weightPath, this.configPath);
 
         // Save Image
-//        Bitmap savedImage = Bitmap.createBitmap(image.width(), image.height(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(image, savedImage);
-//        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+        Bitmap savedImage = Bitmap.createBitmap(image.width(), image.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(image, savedImage);
+        MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
     }
 
     public void processNativeVideo(int rId, String name){
@@ -170,9 +165,6 @@ public class MainActivity extends AppCompatActivity {
         for(Mat mat: mats) {
             addrs[i] = mats.get(i++).getNativeObjAddr();
         }
-
-        Log.i(TAG, "processNativeParallelVideo: First element: " + addrs[0]);
-        Log.i(TAG, "processNativeParallelVideo: Second element: " + addrs[1]);
 
         Long start = System.currentTimeMillis();
         NativeLib.videoProcess(addrs, this.weightPath, this.configPath);
@@ -251,66 +243,6 @@ public class MainActivity extends AppCompatActivity {
         NIOUtils.closeQuietly(out);
     }
 
-    public void processSingleFrameTest(int rId, String name, String threadName){
-        // Initial
-        VideoManager videoManager = new VideoManager(this);
-
-        // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
-
-        // Calculate new size
-        Size ogSize = mats.get(0).size();
-        double ratio = ogSize.width/WIDTH;
-        Size newSize = new Size(WIDTH, ogSize.height/ratio);
-
-        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
-
-        final Mat frame = mats.get(0);
-
-        // Resize image
-        Imgproc.resize(frame, frame, newSize);
-
-        start = System.currentTimeMillis();
-        Thread t1 = new Thread(new Runnable() {
-            @Override public void run() {
-                Long start = System.currentTimeMillis();
-                testImageProcessor.process(frame, weightPath, configPath);
-                Long finish = System.currentTimeMillis();
-                Log.i(TAG, "Process time: " + ((finish - start)/1000.0) + " seconds");
-            }
-        });
-        t1.setName(threadName);
-        t1.start();
-
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
-    }
-
-    public void processSingleFrame(int rId, String name){
-        // Initial
-        VideoManager videoManager = new VideoManager(this);
-
-        // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
-
-        // Calculate new size
-        Size ogSize = mats.get(0).size();
-        double ratio = ogSize.width/WIDTH;
-        Size newSize = new Size(WIDTH, ogSize.height/ratio);
-
-        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
-
-        Mat frame = mats.get(0);
-
-        // Resize image
-        Imgproc.resize(frame, frame, newSize);
-
-        frame = imageProcessor.process(frame);
-
-        Long finish = System.currentTimeMillis();
-        Log.i(TAG, "processVideo: Total time: " + ((finish - start)/1000.0) + " seconds");
-    }
-
     public void processParallelVideo(int rId, String name){
         // Initial
         VideoManager videoManager = new VideoManager(this);
@@ -330,18 +262,10 @@ public class MainActivity extends AppCompatActivity {
         double ratio = ogSize.width/WIDTH;
         Size newSize = new Size(WIDTH, ogSize.height/ratio);
 
-//        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
-
-        Mat frame = new Mat();
-
         /* TODO: Record time */
         start = Core.getTickCount();
         for(int i=0; i<mats.size();i++){
-//            Log.i(TAG, "frame: " + i + "/" + mats.size());
-
-//            if((i % 2) == 0) {
             ImageProcessorManager.process(mats.get(i), newSize, i, this.modelType);
-//            }
         }
 
     }
@@ -423,13 +347,6 @@ public class MainActivity extends AppCompatActivity {
         ImageReader imageReader = new ImageReader(this);
 
         Mat image = imageReader.readImage(rId, name);
-
-        // Calculate new size
-//        Size ogSize = image.size();
-//        double ratio = ogSize.width/WIDTH;
-//        Size newSize = new Size(WIDTH, ogSize.height/ratio);
-//        Imgproc.resize(image, image, newSize);
-//        Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
 
         Long start = System.currentTimeMillis();
         Mat mat = this.imageProcessor.process(image);
@@ -530,13 +447,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Load OpenCV libraries (version 3.4.0)
+     * Load OpenCV libraries
      */
     public void loadOpenCV(){
         // If OpenCV's libraries are not loaded
         if(!OpenCVLoader.initDebug()){
-//            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, blCallback);
-            boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, blCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, blCallback);
         }else{
             blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
