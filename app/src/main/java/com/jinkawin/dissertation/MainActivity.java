@@ -22,19 +22,15 @@ import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Rational;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.lang.annotation.Native;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -49,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
     public ProcessorBroadcastReceiver receiver;
 
     public ImageProcessor imageProcessor;
-    public TestImageProcessor testImageProcessor;
 
     public String saveVideoPath;
     public String weightPath;
@@ -85,8 +80,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        setup();
+
 //        NativeLib.checkNeon();
-        setup(this.modelType);
 
 //        Log.i(TAG, "onCreate: " + Core.getBuildInformation());
 
@@ -407,54 +403,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setup(ModelType type){
-        // Load opencv4android lib
-        loadOpenCV();
-
+    public void setup(){
         this.saveVideoPath = this.getExternalMediaDirs()[0].getAbsolutePath();
+        ModelSetup.setup(this, this.modelType);
 
-        // Read and copy files to internal storage
-        switch (type){
-            case SSD:
-                _readSSD();
-                break;
-            case YOLO:
-                _readYOLO();
-                break;
-            default:
-                type = ModelType.SSD;
-                _readSSD();
-        }
 
-        // Initial
-        this.imageProcessor = new ImageProcessor(this, this.weightPath, this.configPath, type);
-        this.testImageProcessor = new TestImageProcessor();
-    }
-
-    private void _readYOLO(){
-        // Read and copy files to internal storage
-        FileUtility fileUtility = new FileUtility(this);
-        this.weightPath = fileUtility.readAndCopyFile(R.raw.yolov3_weights, "yolov3_weights.weights");
-        this.configPath = fileUtility.readAndCopyFile(R.raw.yolov3_cfg, "yolov3_cfg.cfg");
-
-    }
-
-    private void _readSSD(){
-        // Read and copy files to internal storage
-        FileUtility fileUtility = new FileUtility(this);
-        this.weightPath = fileUtility.readAndCopyFile(R.raw.mobilenetssd_weight, "mobilenetssd_weight.caffemodel");
-        this.configPath = fileUtility.readAndCopyFile(R.raw.mobilenetssd_config, "mobilenetssd_config.prototxt");
-    }
-
-    /**
-     * Load OpenCV libraries
-     */
-    public void loadOpenCV(){
-        // If OpenCV's libraries are not loaded
-        if(!OpenCVLoader.initDebug()){
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, blCallback);
-        }else{
-            blCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
+        this.weightPath = ModelSetup.weightPath;
+        this.configPath = ModelSetup.configPath;
+        this.imageProcessor = ModelSetup.imageProcessor;
     }
 }

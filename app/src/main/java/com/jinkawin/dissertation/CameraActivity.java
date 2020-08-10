@@ -1,8 +1,5 @@
 package com.jinkawin.dissertation;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -13,7 +10,6 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -110,19 +106,27 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         }
     }
 
-    public class ProcessorBroadcastReceiver extends BroadcastReceiver {
-        public static final String ACTION = "com.jinkawin.dissertation.SEND_PROCESS";
 
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            ArrayList<Result> results = ImageProcessorManager.getResults();
-            Log.i(TAG, "onReceive: Result size: " + results.size());
-
-
-            // TODO: sort array
-            Collections.sort(results, new ResultComparator());
-            Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
-
-        }
-    }
+//    public void processParallelVideo(int rId, String name){
+//        // Initial
+//        VideoManager videoManager = new VideoManager(this);
+//
+//        // Init context for broadcasting and setup ImageProcessor
+//        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
+//
+//        // Read Video from RAW Folder
+//        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
+//
+//        // Calculate new size
+//        Size ogSize = mats.get(0).size();
+//        double ratio = ogSize.width/WIDTH;
+//        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+//
+//        /* TODO: Record time */
+//        start = Core.getTickCount();
+//        for(int i=0; i<mats.size();i++){
+//            ImageProcessorManager.process(mats.get(i), newSize, i, this.modelType);
+//        }
+//
+//    }
 }
