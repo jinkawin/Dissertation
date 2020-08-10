@@ -1,14 +1,18 @@
 package com.jinkawin.dissertation;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,9 +25,12 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
     private static final int FPS = 5;
     private CameraBridgeViewBase cbvCamera;
 
+    private PriorityQueue frameQueue;
     private long lastTime;
     private int frameCount;
-    private PriorityQueue frameQueue;
+    private int order = 0;
+
+    public ModelType modelType = ModelType.SSD;
 
     private BaseLoaderCallback blCallback = new BaseLoaderCallback(this) {
         @Override
@@ -52,11 +59,16 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
-        frameQueue = new PriorityQueue<Result>(FPS*2, new ResultComparator());
+        // Setup Model
+        ModelSetup.setup(this, this.modelType);
+
+        // Setup ImageProcessor
+        ImageProcessorManager.setProcessor(this, ModelSetup.weightPath, ModelSetup.configPath, true);
 
         cbvCamera = findViewById(R.id.cbvCamera);
         cbvCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
         cbvCamera.setCvCameraViewListener(this);
+        cbvCamera.setMaxFrameSize(400,400);
     }
 
     @Override
@@ -76,7 +88,18 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         if(isReachFPS()){
             // Set time of the lastest processed image
             lastTime = Core.getCPUTickCount();
+
+            processParallelVideo(mat);
+            mat = ModelSetup.imageProcessor.process(mat);
+
             Log.i(TAG, "onCameraFrame: Processing Image");
+        }else{
+            // draw regtangle
+        }
+
+        if(ImageProcessorManager.streamResult.size() != 0){
+            Log.i(TAG, "onCameraFrame: have result");
+            mat = ImageProcessorManager.streamResult.remove().getFrame();
         }
 
         return mat;
@@ -106,27 +129,14 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         }
     }
 
+    public void processParallelVideo(Mat frame){
 
-//    public void processParallelVideo(int rId, String name){
-//        // Initial
-//        VideoManager videoManager = new VideoManager(this);
-//
-//        // Init context for broadcasting and setup ImageProcessor
-//        ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
-//
-//        // Read Video from RAW Folder
-//        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
-//
-//        // Calculate new size
-//        Size ogSize = mats.get(0).size();
-//        double ratio = ogSize.width/WIDTH;
-//        Size newSize = new Size(WIDTH, ogSize.height/ratio);
-//
-//        /* TODO: Record time */
-//        start = Core.getTickCount();
-//        for(int i=0; i<mats.size();i++){
-//            ImageProcessorManager.process(mats.get(i), newSize, i, this.modelType);
-//        }
-//
-//    }
+        // Calculate new size
+        Size ogSize = frame.size();
+        double ratio = ogSize.width/ModelSetup.WIDTH;
+        Size newSize = new Size(ModelSetup.WIDTH, ogSize.height/ratio);
+
+        Log.i(TAG, "processParallelVideo: process order: " + order++);
+        ImageProcessorManager.process(frame, newSize, order++, this.modelType);
+    }
 }

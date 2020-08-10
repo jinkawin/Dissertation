@@ -33,7 +33,7 @@ public class ImageProcessorRunnable implements Runnable{
         Mat frame = taskProcessorMethods.getFrame();
 
         // Resize image
-        Imgproc.resize(frame, frame, taskProcessorMethods.getSize());
+//        Imgproc.resize(frame, frame, taskProcessorMethods.getSize());
 
         frame = imageProcessor.process(frame);
 

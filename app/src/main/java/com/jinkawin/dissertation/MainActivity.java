@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
     private static final int MEDIA_PICKER = 0;
-    public static final int WIDTH = 480;
 
     public ArrayList<Result> results = new ArrayList<Result>();
 
@@ -255,8 +254,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
-        double ratio = ogSize.width/WIDTH;
-        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+        double ratio = ogSize.width/ModelSetup.WIDTH;
+        Size newSize = new Size(ModelSetup.WIDTH, ogSize.height/ratio);
 
         /* TODO: Record time */
         start = Core.getTickCount();
@@ -291,8 +290,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
-        double ratio = ogSize.width/WIDTH;
-        Size newSize = new Size(WIDTH, ogSize.height/ratio);
+        double ratio = ogSize.width/ModelSetup.WIDTH;
+        Size newSize = new Size(ModelSetup.WIDTH, ogSize.height/ratio);
 
         Log.i(TAG, "ratio: " + ratio + ", new width: " + newSize.width + ", new height: " + ogSize.height);
 

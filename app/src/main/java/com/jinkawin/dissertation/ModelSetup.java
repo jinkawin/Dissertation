@@ -10,6 +10,7 @@ import org.opencv.android.OpenCVLoader;
 public class ModelSetup {
     private static final String TAG = "ModelSetup";
 
+    public static final int WIDTH = 480;
     public static Context context;
 
     public static ImageProcessor imageProcessor;

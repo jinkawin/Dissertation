@@ -25,11 +25,10 @@ public class ImageProcessorManager {
     private static final String TAG = "ImageProcessorManager";
 
     // Get number of avialble CPU's cores
-//    private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
-//    private static int MAXIMUM_CORES = Runtime.getRuntime().availableProcessors();
+    private static int NUMBER_OF_CORES = Runtime.getRuntime().availableProcessors();
+    private static int MAXIMUM_CORES = Runtime.getRuntime().availableProcessors();
 
-    private static int NUMBER_OF_CORES = 8;
-    private static int MAXIMUM_CORES = 8;
+    private static int STREAM_FPS = 30;
 
     // Sets the amount of time an idle thread will wait for a task before terminating
     private static final int KEEP_ALIVE_TIME = 1;
@@ -69,6 +68,7 @@ public class ImageProcessorManager {
         instance = new ImageProcessorManager();
 
         results = new ArrayList<Result>();
+        streamResult = new PriorityQueue<Result>(STREAM_FPS, new ResultComparator());
 
         inputCount = 0;
     }
@@ -93,46 +93,15 @@ public class ImageProcessorManager {
 
                 switch (ProcessStatus.intToEnum(msg.what)){
                     case SUCCESS:
-                        results.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
+                        if(isStream){ // Live stream from camera
+                            streamResult.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
+                        }else { // pre-recorded video
+                            results.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
 
-                        if(results.size() == inputCount){
-                            noticeMainActivity();
+                            if (results.size() == inputCount) {
+                                noticeMainActivity();
+                            }
                         }
-
-                        break;
-                    default:
-                        Log.i(TAG, "handleMessage: default");
-                        break;
-                }
-
-                // Recycle task for reusing
-                recycleTask(processorTask);
-            }
-        };
-    }
-
-    /**
-     * Constuctor for live stream video from camera
-     * @param fps
-     */
-    private ImageProcessorManager(int fps){
-        isStream = true;
-
-        // Initial Queue
-        this.processorQueue = new LinkedBlockingQueue<Runnable>();
-        this.taskQueue = new LinkedBlockingQueue<ImageProcessorTask>();
-
-        // Create threads pool
-        this.processorThreadPool = new ThreadPoolExecutor(NUMBER_OF_CORES, MAXIMUM_CORES, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, this.processorQueue);
-
-        handler = new Handler(Looper.getMainLooper()){
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                ImageProcessorTask processorTask = (ImageProcessorTask) msg.obj;
-
-                switch (ProcessStatus.intToEnum(msg.what)){
-                    case SUCCESS:
-                        streamResult.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
 
                         break;
                     default:
@@ -192,6 +161,15 @@ public class ImageProcessorManager {
         context = ct;
         weightPath = _weightPath;
         configPath = _configPath;
+
+        isStream = false;
+    }
+
+    public static void setProcessor(Context ct, String _weightPath, String _configPath, boolean isStream){
+        context = ct;
+        weightPath = _weightPath;
+        configPath = _configPath;
+        ImageProcessorManager.isStream = isStream;
     }
 
     public static ArrayList<Result> getResults(){
