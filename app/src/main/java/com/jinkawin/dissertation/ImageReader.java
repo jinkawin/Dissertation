@@ -29,12 +29,24 @@ public class ImageReader {
      */
     public Mat readImage(int resId, String filename){
         FileUtility fileUtility = new FileUtility(this.context);
-        Mat mat = new Mat();
 
         String filePath = fileUtility.readAndCopyFile(resId, filename);
         File file = new File(filePath);
 
+        return imageToMat(file);
+    }
+
+    public Mat imageToMat(File file){
+        Mat mat = new Mat();
         this.bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+        Utils.bitmapToMat(bitmap, mat);
+
+        return mat;
+    }
+
+    public Mat pathToMat(String path){
+        Mat mat = new Mat();
+        this.bitmap = BitmapFactory.decodeFile(path);
         Utils.bitmapToMat(bitmap, mat);
 
         return mat;

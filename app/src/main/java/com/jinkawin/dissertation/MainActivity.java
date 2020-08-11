@@ -1,16 +1,21 @@
 package com.jinkawin.dissertation;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -21,8 +26,6 @@ import org.jcodec.api.android.AndroidSequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Rational;
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -38,7 +41,11 @@ import java.util.Collections;
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
-    private static final int MEDIA_PICKER = 0;
+    private static final int IMAGE_PICKER = 0;
+    private static final int VIDEO_PICKER = 1;
+
+    private static final int GET_PERMISSION_READ_EXTERNAL_STROAGE = 0;
+    private static final int GET_PERMISSION_WRITE_EXTERNAL_STROAGE = 1;
 
     public ArrayList<Result> results = new ArrayList<Result>();
 
@@ -54,14 +61,24 @@ public class MainActivity extends AppCompatActivity {
     public ModelType modelType = ModelType.SSD;
 
     public Button btnCamera;
-    public Button btnBrowse;
+    public Button btnBrowseImage;
+    public Button btnBrowseVideo;
     public ImageView ivResult;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Uri uploadfileuri = data.getData();
-        File file = new File(uploadfileuri.getPath());
+        if (data != null) {
+            Uri contentURI = data.getData();
+            String path = null;
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),contentURI);
+                ivResult.setImageBitmap(bitmap);
+            } catch (IOException e) {
+                Log.i(TAG, "onActivityResult: Noooooooo");
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -70,29 +87,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         setup();
-
-        this.btnCamera = findViewById(R.id.btnCamera);
-        btnCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        this.btnBrowse = findViewById(R.id.btnBrowse);
-        btnBrowse.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("image/* video/*");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(intent, MEDIA_PICKER);
-            }
-        });
-
-        this.ivResult = findViewById(R.id.ivResult);
-        ivResult.setImageBitmap(this.processImage(R.raw.picturte_test, "picture_test.jpg"));
+        initView();
+        setListener();
+        requestPermission();
 
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
 //        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
@@ -329,12 +326,12 @@ public class MainActivity extends AppCompatActivity {
 //        NIOUtils.closeQuietly(out);
     }
 
-    public Bitmap processImage(int rId, String name){
+    public Bitmap processImage(File file){
 
         // Initial
         ImageReader imageReader = new ImageReader(this);
 
-        Mat image = imageReader.readImage(rId, name);
+        Mat image = imageReader.imageToMat(file);
 
         Long start = System.currentTimeMillis();
         Mat mat = this.imageProcessor.process(image);
@@ -405,5 +402,75 @@ public class MainActivity extends AppCompatActivity {
         this.weightPath = ModelSetup.weightPath;
         this.configPath = ModelSetup.configPath;
         this.imageProcessor = ModelSetup.imageProcessor;
+    }
+
+    public void initView(){
+        this.btnCamera = findViewById(R.id.btnCamera);
+        this.btnBrowseImage = findViewById(R.id.btnBrowseImage);
+        this.btnBrowseVideo = findViewById(R.id.btnBrowseVideo);
+        this.ivResult = findViewById(R.id.ivResult);
+    }
+
+    public void setListener(){
+
+        this.btnCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        this.btnBrowseImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                startActivityForResult(intent, IMAGE_PICKER);
+            }
+        });
+
+        this.btnBrowseVideo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("video/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(intent, VIDEO_PICKER);
+            }
+        });
+    }
+
+    public void requestPermission(){
+        Log.i(TAG, "getGROUPSTORAGEPremission: In");
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    GET_PERMISSION_READ_EXTERNAL_STROAGE);
+            Log.i(TAG, "getGROUPSTORAGEPremission: No READ_EXTERNAL_STORAGE");
+        }else if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    GET_PERMISSION_WRITE_EXTERNAL_STROAGE);
+            Log.i(TAG, "getGROUPSTORAGEPremission: No WRITE_EXTERNAL_STORAGE");
+        } else {
+            Log.i(TAG, "getGROUPSTORAGEPremission: Yes");
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == GET_PERMISSION_READ_EXTERNAL_STROAGE) {
+            Log.d(TAG, "GET_PERMISSION_READ_EXTERNAL_STROAGE");
+        }else if (requestCode == GET_PERMISSION_READ_EXTERNAL_STROAGE) {
+            Log.d(TAG, "GET_PERMISSION_WRITE_EXTERNAL_STROAGE");
+        } else {
+            Log.d(TAG, "code: " + requestCode);
+        }
     }
 }
