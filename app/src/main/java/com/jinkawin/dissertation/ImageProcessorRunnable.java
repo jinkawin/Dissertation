@@ -24,7 +24,8 @@ public class ImageProcessorRunnable implements Runnable{
                 taskProcessorMethods.getContext(),
                 taskProcessorMethods.getWeightPath(),
                 taskProcessorMethods.getConfigPath(),
-                taskProcessorMethods.getModel());
+                taskProcessorMethods.getModel(),
+                taskProcessorMethods.isLiveStream());
 
         // Get target frame
         Mat frame = taskProcessorMethods.getFrame();

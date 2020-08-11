@@ -134,7 +134,7 @@ public class ImageProcessorManager {
         }
 
         // Intial task
-        processorTask.initTask(context, frame, size, index, weightPath, configPath, model);
+        processorTask.initTask(context, frame, size, index, weightPath, configPath, model, isStream);
 
         // Start processing image
         instance.processorThreadPool.execute(processorTask.getImageProcessorRunnable());

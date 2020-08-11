@@ -15,6 +15,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import org.jcodec.api.android.AndroidSequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
@@ -42,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
     public ArrayList<Result> results = new ArrayList<Result>();
 
     public ProcessorBroadcastReceiver receiver;
-
     public ImageProcessor imageProcessor;
 
     public String saveVideoPath;
@@ -52,6 +52,10 @@ public class MainActivity extends AppCompatActivity {
     public Long start;
 
     public ModelType modelType = ModelType.SSD;
+
+    public Button btnCamera;
+    public Button btnBrowse;
+    public ImageView ivResult;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -67,16 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
         setup();
 
-//        NativeLib.checkNeon();
-
-//        Log.i(TAG, "onCreate: " + Core.getBuildInformation());
-
-//        Log.i(TAG, "onCreate: Native-Lib: " + NativeLib.helloWorld());
-//        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
-//        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
-//        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
-
-        Button btnCamera = findViewById(R.id.btnCamera);
+        this.btnCamera = findViewById(R.id.btnCamera);
         btnCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -84,19 +79,24 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-//        btnBrowser.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-//                intent.setType("*/*");
-//                intent.addCategory(Intent.CATEGORY_OPENABLE);
-//                startActivityForResult(intent, MEDIA_PICKER);
-//            }
-//        });
 
-        // It seems thread are run in sequencial
-        // The second thread will be started when the first thread is finished.
-        // And the second thread is not consistency run, the second thread is blocked (is switched).
+        this.btnBrowse = findViewById(R.id.btnBrowse);
+        btnBrowse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/* video/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(intent, MEDIA_PICKER);
+            }
+        });
+
+        this.ivResult = findViewById(R.id.ivResult);
+        ivResult.setImageBitmap(this.processImage(R.raw.picturte_test, "picture_test.jpg"));
+
+//        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
+//        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
+//        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
 //        processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 1");
 //        processSingleFrameTest(R.raw.video_test, "video_test.mp4", "Dnn 2");
@@ -329,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
 //        NIOUtils.closeQuietly(out);
     }
 
-    public void processImage(int rId, String name){
+    public Bitmap processImage(int rId, String name){
 
         // Initial
         ImageReader imageReader = new ImageReader(this);
@@ -346,6 +346,8 @@ public class MainActivity extends AppCompatActivity {
         Bitmap savedImage = Bitmap.createBitmap(imageReader.bitmap);
         Utils.matToBitmap(mat, savedImage);
         MediaStore.Images.Media.insertImage(getContentResolver(), savedImage, "title", "description");
+
+        return savedImage;
     }
 
     public class ProcessorBroadcastReceiver extends BroadcastReceiver {

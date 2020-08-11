@@ -56,10 +56,34 @@ public class ImageProcessor {
 
     private ModelType model;
 
+    private boolean isLiveStream;
+
     /* --------- Setup --------- */
     public ImageProcessor(Context context, String weightPath, String configUri, ModelType model){
         this.context = context;
         this.model = model;
+        this.isLiveStream = false;
+
+        this.detectionLogs = new ArrayList<>();
+
+        // Initial network
+        switch (model){
+            case SSD:
+                _setupCaffe_SSD(weightPath, configUri);
+                break;
+            case YOLO:
+                _setupDarnet_Yolo3(weightPath, configUri);
+                break;
+            default:
+                this.model = ModelType.SSD;
+                _setupCaffe_SSD(weightPath, configUri);
+        }
+    }
+
+    public ImageProcessor(Context context, String weightPath, String configUri, ModelType model, boolean isLiveStream){
+        this.context = context;
+        this.model = model;
+        this.isLiveStream = isLiveStream;
 
         this.detectionLogs = new ArrayList<>();
 
@@ -299,10 +323,15 @@ public class ImageProcessor {
 
     /* --------- SSD --------- */
     private Detection _processSSD(Mat frame){
+        Mat blob;
 
         // Process
-//        Mat blob = Dnn.blobFromImage(frame, SCALE_FACTOR, new Size(WIDTH, HEIGHT), new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), false, false); // size = (1, 4, 416, 416)
-        Mat blob = Dnn.blobFromImage(frame, SCALE_FACTOR); // Faster
+        if(this.isLiveStream){
+            Log.i(TAG, "_processSSD: Live");
+            blob = Dnn.blobFromImage(frame, SCALE_FACTOR); // Faster
+        }else{
+            blob = Dnn.blobFromImage(frame, SCALE_FACTOR, new Size(WIDTH, HEIGHT), new Scalar(MEAN_VAL, MEAN_VAL, MEAN_VAL), false, false); // size = (1, 4, 416, 416)
+        }
 
         this.network.setInput(blob);
 

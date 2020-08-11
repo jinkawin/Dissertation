@@ -16,6 +16,8 @@ public interface TaskProcessorMethods {
 
     void setFrame(Mat frame);
 
+    boolean isLiveStream();
+
     Mat getFrame();
 
     int getIndex();

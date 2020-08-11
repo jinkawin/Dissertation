@@ -30,7 +30,6 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
 
     private PriorityQueue frameQueue;
     private long lastTime;
-    private int frameCount;
     private int order = 0;
 
     public ModelType modelType = ModelType.SSD;

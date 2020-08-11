@@ -25,6 +25,7 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     private String weightPath;
     private String configPath;
     private ModelType model;
+    private boolean isLiveStream;
 
     private ArrayList<DetectionLog> detectionLogs;
 
@@ -39,6 +40,21 @@ public class ImageProcessorTask implements TaskProcessorMethods {
         this.size = newSize;
         this.index = index;
         this.model = model;
+        this.isLiveStream = false;
+
+        this.weightPath = weightPath;
+        this.configPath = configPath;
+
+        detectionLogs = new ArrayList<>();
+    }
+
+    public void initTask(Context context, Mat frame, Size newSize, int index, String weightPath, String configPath, ModelType model, boolean isLiveStream){
+        this.context = context;
+        this.frame = frame;
+        this.size = newSize;
+        this.index = index;
+        this.model = model;
+        this.isLiveStream = isLiveStream;
 
         this.weightPath = weightPath;
         this.configPath = configPath;
@@ -90,6 +106,11 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     @Override
     public void setFrame(Mat frame) {
         this.frame = frame;
+    }
+
+    @Override
+    public boolean isLiveStream() {
+        return this.isLiveStream;
     }
 
     @Override
