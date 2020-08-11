@@ -3,7 +3,11 @@ package com.jinkawin.dissertation;
 import android.content.Context;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
 import org.opencv.core.Size;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ImageProcessorTask implements TaskProcessorMethods {
     private static final String TAG = "ImageProcessorTask";
@@ -22,6 +26,8 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     private String configPath;
     private ModelType model;
 
+    private ArrayList<DetectionLog> detectionLogs;
+
     public ImageProcessorTask(){
         instance = ImageProcessorManager.getInstance();
         imageProcessorRunnable = new ImageProcessorRunnable(this);
@@ -36,6 +42,8 @@ public class ImageProcessorTask implements TaskProcessorMethods {
 
         this.weightPath = weightPath;
         this.configPath = configPath;
+
+        detectionLogs = new ArrayList<>();
     }
 
     /**
@@ -62,6 +70,8 @@ public class ImageProcessorTask implements TaskProcessorMethods {
 
         this.weightPath = null;
         this.configPath = null;
+
+        this.detectionLogs.clear();
     }
 
     @Override
@@ -115,6 +125,16 @@ public class ImageProcessorTask implements TaskProcessorMethods {
     @Override
     public ModelType getModel() {
         return this.model;
+    }
+
+    @Override
+    public ArrayList<DetectionLog> getDetectionLogs() {
+        return this.detectionLogs;
+    }
+
+    @Override
+    public void setDetectionLogs(ArrayList<DetectionLog> detectionLogs) {
+        this.detectionLogs = detectionLogs;
     }
 
 }

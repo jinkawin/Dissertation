@@ -52,6 +52,7 @@ public class ImageProcessor {
 
     private Net network;
     private List<String> labels;
+    private ArrayList<DetectionLog> detectionLogs;
 
     private ModelType model;
 
@@ -59,6 +60,8 @@ public class ImageProcessor {
     public ImageProcessor(Context context, String weightPath, String configUri, ModelType model){
         this.context = context;
         this.model = model;
+
+        this.detectionLogs = new ArrayList<>();
 
         // Initial network
         switch (model){
@@ -141,10 +144,12 @@ public class ImageProcessor {
         int statusSize = statuses.length;
         for(int i=0; i<statusSize; i++){
             Scalar colour = statuses[i]?COLOUR_RED:COLOUR_GREEN;
+            Rect _rect = new Rect(nmsBoxes.get(i).getX(), nmsBoxes.get(i).getY(), nmsBoxes.get(i).getWidth(), nmsBoxes.get(i).getHeight());
 
+            detectionLogs.add(new DetectionLog(_rect, colour));
             Imgproc.rectangle(
                     frame,
-                    new Rect(nmsBoxes.get(i).getX(), nmsBoxes.get(i).getY(), nmsBoxes.get(i).getWidth(), nmsBoxes.get(i).getHeight()),
+                    _rect,
                     colour
             );
 
@@ -201,7 +206,7 @@ public class ImageProcessor {
         this.network.forward(layerOutputs, layersNames);
 
         Long finish = System.currentTimeMillis();
-//        Log.i(TAG, "_processSSD: Total time: " + ((finish - start)/1000.0) + " seconds");
+        Log.i(TAG, "_processSSD: Total time: " + ((finish - start)/1000.0) + " seconds");
 
         return this._detectPerson_Yolo(layerOutputs, frame, false);
     }
@@ -368,5 +373,9 @@ public class ImageProcessor {
         }
 
         return new Detection(indices, nmsBoxes, frame);
+    }
+
+    public ArrayList<DetectionLog> getDetectionLog(){
+        return this.detectionLogs;
     }
 }

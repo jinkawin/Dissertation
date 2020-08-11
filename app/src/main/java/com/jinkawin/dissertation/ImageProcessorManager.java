@@ -10,9 +10,11 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
 import org.opencv.core.Size;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -48,13 +50,15 @@ public class ImageProcessorManager {
     // For singleton pattern
     private static ImageProcessorManager instance;
 
-    public static ArrayList<Result> results;
-    public static PriorityQueue<Result> streamResult;
     private static Context context;
     private static int inputCount;
     private static String weightPath;
     private static String configPath;
     private static boolean isStream;
+
+    public static ArrayList<Result> results;
+    public static PriorityQueue<Result> streamResult;
+    public static ArrayList<DetectionLog> detectionLogs;
 
     // Message manager
     private Handler handler;
@@ -69,6 +73,7 @@ public class ImageProcessorManager {
 
         results = new ArrayList<Result>();
         streamResult = new PriorityQueue<Result>(STREAM_FPS, new ResultComparator());
+        detectionLogs = new ArrayList<>();
 
         inputCount = 0;
     }
@@ -95,6 +100,8 @@ public class ImageProcessorManager {
                     case SUCCESS:
                         if(isStream){ // Live stream from camera
                             streamResult.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
+                            detectionLogs.clear();
+                            detectionLogs.addAll(processorTask.getDetectionLogs());
                         }else { // pre-recorded video
                             results.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
 

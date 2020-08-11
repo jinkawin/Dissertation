@@ -18,6 +18,10 @@ public class Box {
     private int width;
     private int height;
 
+    public Box(){
+
+    }
+
     public Box(int centreX, int centreY, int width, int height){
         this.centreX = centreX;
         this.centreY = centreY;

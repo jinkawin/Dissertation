@@ -1,18 +1,21 @@
 package com.jinkawin.dissertation;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +25,7 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
 
     private static final String TAG = "CameraActivity";
 
-    private static final int FPS = 5;
+    private static final int FPS = 10;
     private CameraBridgeViewBase cbvCamera;
 
     private PriorityQueue frameQueue;
@@ -55,9 +58,31 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        reset();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        reset();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+
+        // Back Button
+        Button btnBack = findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+            }
+        });
 
         // Setup Model
         ModelSetup.setup(this, this.modelType);
@@ -69,6 +94,7 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         cbvCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
         cbvCamera.setCvCameraViewListener(this);
         cbvCamera.setMaxFrameSize(400,400);
+        cbvCamera.enableFpsMeter();
     }
 
     @Override
@@ -90,16 +116,24 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
             lastTime = Core.getCPUTickCount();
 
             processParallelVideo(mat);
-            mat = ModelSetup.imageProcessor.process(mat);
+//            mat = ModelSetup.imageProcessor.process(mat);
 
             Log.i(TAG, "onCameraFrame: Processing Image");
-        }else{
-            // draw regtangle
         }
 
         if(ImageProcessorManager.streamResult.size() != 0){
-            Log.i(TAG, "onCameraFrame: have result");
+            // If there is processed frame in the buffer
             mat = ImageProcessorManager.streamResult.remove().getFrame();
+        }else{
+
+            // Draw Rectagle from previos frame
+            for (DetectionLog log : ImageProcessorManager.detectionLogs) {
+                Imgproc.rectangle(
+                        mat,
+                        log.getDetectedRect(),
+                        log.getColour()
+                );
+            }
         }
 
         return mat;
@@ -108,6 +142,17 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
     @Override
     protected List<? extends CameraBridgeViewBase> getCameraViewList() {
         return Collections.singletonList(cbvCamera);
+    }
+
+    private void reset(){
+        if (cbvCamera != null) {
+            cbvCamera.disableView();
+        }
+
+        order = 0;
+
+        // Clear buffer
+        ImageProcessorManager.streamResult.clear();
     }
 
     public boolean isReachFPS(){

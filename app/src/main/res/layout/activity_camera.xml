@@ -6,9 +6,21 @@
     android:layout_height="match_parent"
     tools:context=".CameraActivity">
 
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_marginTop="50dp"
+        android:text="Back"
+        app:layout_constraintBottom_toTopOf="@+id/cbvCamera"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <org.opencv.android.JavaCameraView
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:id="@+id/cbvCamera" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

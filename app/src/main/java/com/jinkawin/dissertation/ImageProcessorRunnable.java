@@ -1,9 +1,6 @@
 package com.jinkawin.dissertation;
 
-import android.util.Log;
-
 import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
 
 public class ImageProcessorRunnable implements Runnable{
     private static final String TAG = "ImageProcessorRunnable";
@@ -38,6 +35,9 @@ public class ImageProcessorRunnable implements Runnable{
         frame = imageProcessor.process(frame);
 
         taskProcessorMethods.setFrame(frame);
+
+        // Get list of detection
+        taskProcessorMethods.setDetectionLogs(imageProcessor.getDetectionLog());
 
         // Send information back to the manager
         taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS);

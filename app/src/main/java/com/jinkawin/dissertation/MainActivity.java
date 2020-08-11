@@ -53,20 +53,6 @@ public class MainActivity extends AppCompatActivity {
 
     public ModelType modelType = ModelType.SSD;
 
-    /**
-     * Callback when OpenCV libraries are loaded.
-     */
-    private BaseLoaderCallback blCallback = new BaseLoaderCallback() {
-        @Override
-        public void onManagerConnected(int status) {
-            if(status == LoaderCallbackInterface.SUCCESS){
-                Log.i(TAG, "onManagerConnected: Setup OpenCV is done");
-            }else{
-                super.onManagerConnected(status);
-            }
-        }
-    };
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -90,7 +76,14 @@ public class MainActivity extends AppCompatActivity {
 //        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
 //        this.processNativeVideo(R.raw.video_test, "video_test.mp4");
 
-//        Button btnBrowser = findViewById(R.id.btnBrowser);
+        Button btnCamera = findViewById(R.id.btnCamera);
+        btnCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), CameraActivity.class);
+                startActivity(intent);
+            }
+        });
 //        btnBrowser.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {
@@ -114,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
 //        this.processVideo(R.raw.video_test, "video_test.mp4");
 //        this.processSingleFrame(R.raw.picturte_test, "picture_test.jpg");
 //        this.processImage(R.raw.picturte_test, "picture_test.jpg");
-        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
+//        this.processParallelVideo(R.raw.video_test, "video_test.mp4");
     }
 
     public void processNativeImage(int rId, String name){
