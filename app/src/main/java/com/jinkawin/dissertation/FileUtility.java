@@ -1,12 +1,14 @@
 package com.jinkawin.dissertation;
 
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class FileUtility {
 
@@ -27,6 +29,32 @@ public class FileUtility {
         BufferedInputStream bis;
         try {
             bis = new BufferedInputStream(this.context.getResources().openRawResource(resId));
+            byte data[] = new byte[bis.available()];
+
+            // Read file
+            bis.read(data);
+            bis.close();
+
+            // Create copy to internal storage
+            File file = new File(this.context.getFilesDir(), fileName);
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(data);
+            fos.close();
+
+            filePath = file.getAbsolutePath();
+
+        } catch (IOException e) {
+            Log.e(TAG, "Fail to read file");
+        }
+
+        return filePath;
+    }
+
+    public String readAndCopyFile(Uri uri, String fileName) {
+        String filePath = "";
+        BufferedInputStream bis;
+        try {
+            bis = new BufferedInputStream(this.context.getApplicationContext().getContentResolver().openInputStream(uri));
             byte data[] = new byte[bis.available()];
 
             // Read file

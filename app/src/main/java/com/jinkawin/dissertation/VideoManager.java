@@ -1,7 +1,9 @@
 package com.jinkawin.dissertation;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
@@ -20,6 +22,7 @@ import org.opencv.core.Size;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class VideoManager {
@@ -72,6 +75,41 @@ public class VideoManager {
         } catch (JCodecException je){
             Log.e(TAG, "JCode Exception");
         }
+
+        return mats;
+    }
+
+    public ArrayList<Mat> readVideo(Uri uri, String filename){
+        FileUtility fileUtility = new FileUtility(this.context);
+        ArrayList<Mat> mats = new ArrayList<>();
+        Picture frame;
+
+        String filePath = fileUtility.readAndCopyFile(uri, filename);
+        File file = new File(filePath);
+
+        try {
+            // Read video from java.io.File by using FrameGrab
+            FrameGrab frameGrab = FrameGrab.createFrameGrab(NIOUtils.readableChannel(file));
+
+            // For each frame in video
+            while(null != (frame = frameGrab.getNativeFrame())){
+
+                // Convert Picture -> Bitmap -> Mat (Video container in OpenCV)
+                Bitmap bitmap = AndroidUtil.toBitmap(frame);
+                Mat mat = new Mat();
+                Utils.bitmapToMat(bitmap, mat);
+
+                mats.add(mat);
+            }
+        } catch (FileNotFoundException fe){
+            Log.e(TAG, "File not found");
+        } catch (IOException ioe){
+            Log.e(TAG, "I/O Exception");
+        } catch (JCodecException je){
+            Log.e(TAG, "JCode Exception");
+        }
+
+        Log.i(TAG, "readVideo: size:" + mats.size());
 
         return mats;
     }

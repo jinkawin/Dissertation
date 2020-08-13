@@ -52,4 +52,12 @@ public class ImageReader {
         return mat;
     }
 
+    public Mat bitmapToMat(Bitmap bitmap){
+        Mat mat = new Mat();
+        this.bitmap = bitmap;
+        Utils.bitmapToMat(bitmap, mat);
+
+        return mat;
+    }
+
 }

@@ -51,11 +51,11 @@ public class ImageProcessorManager {
     private static ImageProcessorManager instance;
 
     private static Context context;
-    private static int inputCount;
     private static String weightPath;
     private static String configPath;
     private static boolean isStream;
 
+    public static int inputCount;
     public static ArrayList<Result> results;
     public static PriorityQueue<Result> streamResult;
     public static ArrayList<DetectionLog> detectionLogs;
@@ -104,6 +104,7 @@ public class ImageProcessorManager {
                             detectionLogs.addAll(processorTask.getDetectionLogs());
                         }else { // pre-recorded video
                             results.add(new Result(processorTask.getFrame(), processorTask.getIndex()));
+                            noticeUpdate();
 
                             if (results.size() == inputCount) {
                                 noticeMainActivity();
@@ -162,6 +163,13 @@ public class ImageProcessorManager {
             context.sendBroadcast(intent);
         }
 
+    }
+
+    private void noticeUpdate(){
+        Intent intent = new Intent();
+        intent.setAction(MainActivity.ProcessorBroadcastReceiver.ACTION);
+        intent.putExtra("data", ProcessStatus.SUCCESS);
+        context.sendBroadcast(intent);
     }
 
     public static void setProcessor(Context ct, String _weightPath, String _configPath){

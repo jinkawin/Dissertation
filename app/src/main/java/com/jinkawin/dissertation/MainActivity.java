@@ -4,10 +4,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -21,6 +21,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.MediaController;
+import android.widget.ProgressBar;
+import android.widget.VideoView;
 
 import org.jcodec.api.android.AndroidSequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
@@ -35,6 +38,7 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -64,19 +68,39 @@ public class MainActivity extends AppCompatActivity {
     public Button btnBrowseImage;
     public Button btnBrowseVideo;
     public ImageView ivResult;
+    public VideoView vvResult;
+    public ProgressBar pbProgress;
+
+    public boolean isParellel = true;
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (data != null) {
             Uri contentURI = data.getData();
-            String path = null;
-            try {
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),contentURI);
-                ivResult.setImageBitmap(bitmap);
-            } catch (IOException e) {
-                Log.i(TAG, "onActivityResult: Noooooooo");
-                e.printStackTrace();
+
+            if(requestCode == IMAGE_PICKER) {
+                vvResult.setVisibility(View.INVISIBLE);
+                try {
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), contentURI);
+                    ivResult.setVisibility(View.VISIBLE);
+                    ivResult.setImageBitmap(processImage(bitmap));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }else if(requestCode == VIDEO_PICKER){
+                ivResult.setVisibility(View.INVISIBLE);
+                if(isParellel){
+                    pbProgress.setVisibility(View.VISIBLE);
+                    processParallelVideo(contentURI, "input_video.mp4");
+                }else{
+                    vvResult.setVisibility(View.VISIBLE);
+                    String path = processVideo(contentURI, "input_video.mp4");
+                    vvResult.setVideoPath(path);
+                    vvResult.start();
+                }
+
             }
         }
     }
@@ -90,6 +114,18 @@ public class MainActivity extends AppCompatActivity {
         initView();
         setListener();
         requestPermission();
+
+        vvResult.setVisibility(View.INVISIBLE);
+        pbProgress.setVisibility(View.INVISIBLE);
+
+//        FileUtility fileUtility = new FileUtility(this);
+//
+//        MediaController mediaController = new MediaController(this);
+//        mediaController.setAnchorView(vvResult);
+//
+//        vvResult.setVideoPath(fileUtility.readAndCopyFile(R.raw.video_test, "video_test.mp4"));
+//        vvResult.setMediaController(mediaController);
+//        vvResult.start();
 
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");
 //        this.processNativeParallelVideo(R.raw.video_test, "video_test.mp4");
@@ -228,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
         NIOUtils.closeQuietly(out);
     }
 
-    public void processParallelVideo(int rId, String name){
+    public void processParallelVideo(Uri uri, String name){
         // Initial
         VideoManager videoManager = new VideoManager(this);
 
@@ -240,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
         ImageProcessorManager.setProcessor(this, this.weightPath, this.configPath);
 
         // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
+        ArrayList<Mat> mats = videoManager.readVideo(uri, name);
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
@@ -255,19 +291,21 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void processVideo(int rId, String name){
+    public String processVideo(Uri uri, String name){
         ArrayList<Mat> results = new ArrayList<>();
 
         // Initial
         VideoManager videoManager = new VideoManager(this);
 
-        // Init for saving video
+        // Init for saving video{
         File targetFolder = this.getExternalMediaDirs()[0];
+        String outPath = targetFolder.getAbsolutePath() + "/" + System.currentTimeMillis() + ".mp4";
+
         SeekableByteChannel out = null;
         AndroidSequenceEncoder encoder = null;
         try {
             /* TODO: Change save path to Gallery */
-            out = NIOUtils.writableFileChannel(targetFolder.getAbsolutePath() + "/" + System.currentTimeMillis() + ".mp4");
+            out = NIOUtils.writableFileChannel(outPath);
             encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
         } catch (FileNotFoundException fe){
             Log.e(TAG, "saveVideo: " + fe.getMessage());
@@ -276,7 +314,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Read Video from RAW Folder
-        ArrayList<Mat> mats = videoManager.readVideo(rId, name);
+        ArrayList<Mat> mats = videoManager.readVideo(uri, name);
+        Log.i(TAG, "processVideo: Mats size: " + mats.size());
 
         // Calculate new size
         Size ogSize = mats.get(0).size();
@@ -290,48 +329,45 @@ public class MainActivity extends AppCompatActivity {
         /* TODO: Record time */
         Long start = Core.getTickCount();
         for(int i=0; i<mats.size();i++){
-            Log.i("ImageProcessor", "frame: " + i + "/" + mats.size());
+             frame = mats.get(i);
 
-//            if((i % 2) == 0) {
+             // Resize image
+             Imgproc.resize(frame, frame, newSize);
 
-                frame = mats.get(i);
-
-                // Resize image
-                Imgproc.resize(frame, frame, newSize);
-
-                frame = this.imageProcessor.process(frame);
-                results.add(frame);
-//            }
+             frame = this.imageProcessor.process(frame);
+             results.add(frame);
         }
 
         Long finish = Core.getTickCount();
         Log.i(TAG, "processVideo: Total time: " + ((finish - start)/Core.getTickFrequency()) + " seconds");
 
-//        for (Mat result:results) {
-//            //Save frame to video
-//            try {
-//                Bitmap bitmap = Bitmap.createBitmap(result.width(), result.height(), Bitmap.Config.ARGB_8888);
-//                Utils.matToBitmap(result, bitmap);
-//                encoder.encodeImage(bitmap);
-//            } catch (IOException e){
-//                Log.e(TAG, "encode: " + e.getMessage());
-//            }
-//        }
-//
-//        try {
-//            encoder.finish();
-//        } catch (IOException e){
-//            Log.e(TAG, e.getMessage());
-//        }
-//        NIOUtils.closeQuietly(out);
+        for (Mat result:results) {
+            //Save frame to video
+            try {
+                Bitmap bitmap = Bitmap.createBitmap(result.width(), result.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(result, bitmap);
+                encoder.encodeImage(bitmap);
+            } catch (IOException e){
+                Log.e(TAG, "encode: " + e.getMessage());
+            }
+        }
+
+        try {
+            encoder.finish();
+        } catch (IOException e){
+            Log.e(TAG, e.getMessage());
+        }
+        NIOUtils.closeQuietly(out);
+
+        return outPath;
     }
 
-    public Bitmap processImage(File file){
+    public Bitmap processImage(Bitmap bitmap){
 
         // Initial
         ImageReader imageReader = new ImageReader(this);
 
-        Mat image = imageReader.imageToMat(file);
+        Mat image = imageReader.bitmapToMat(bitmap);
 
         Long start = System.currentTimeMillis();
         Mat mat = this.imageProcessor.process(image);
@@ -352,45 +388,62 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            ArrayList<Result> results = ImageProcessorManager.getResults();
-            Log.i(TAG, "onReceive: Result size: " + results.size());
+            Bundle extras = intent.getExtras();
+            extras.get("data");
+            
+            if(extras.get("data") == ProcessStatus.FINISH) {
 
-            // Init for saving video
-            SeekableByteChannel out = null;
-            AndroidSequenceEncoder encoder = null;
-            try {
-                /* TODO: Change save path to Gallery */
-                out = NIOUtils.writableFileChannel(saveVideoPath + "/" + System.currentTimeMillis() + ".mp4");
-                encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
-            } catch (FileNotFoundException fe){
-                Log.e(TAG, "saveVideo: " + fe.getMessage());
-            } catch (IOException ioe){
-                Log.e(TAG, "saveVideo: " + ioe.getMessage());
-            }
+                ArrayList<Result> results = ImageProcessorManager.getResults();
+                Log.i(TAG, "onReceive: Result size: " + results.size());
+                String path = saveVideoPath + "/" + System.currentTimeMillis() + ".mp4";
 
-            Long finish = Core.getTickCount();
-            Log.i(TAG, "processVideo: Total time: " + ((finish - start)/Core.getTickFrequency()) + " seconds");
-
-            // TODO: sort array
-            Collections.sort(results, new ResultComparator());
-            Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
-
-            // encode to video
-            for (int i = 0; i < results.size(); i++) {
+                // Init for saving video
+                SeekableByteChannel out = null;
+                AndroidSequenceEncoder encoder = null;
                 try {
-                    encoder.encodeImage(results.get(i).getBitmap());
-                } catch (IOException e) {
-                    Log.e(TAG, "processParallelVideo: " + e.getMessage());
+                    /* TODO: Change save path to Gallery */
+                    out = NIOUtils.writableFileChannel(path);
+                    encoder = new AndroidSequenceEncoder(out, Rational.R(30, 1));
+                } catch (FileNotFoundException fe) {
+                    Log.e(TAG, "saveVideo: " + fe.getMessage());
+                } catch (IOException ioe) {
+                    Log.e(TAG, "saveVideo: " + ioe.getMessage());
                 }
-            }
 
-            try {
-                encoder.finish();
-            } catch (IOException e){
-                Log.e(TAG, e.getMessage());
+                Long finish = Core.getTickCount();
+                Log.i(TAG, "processVideo: Total time: " + ((finish - start) / Core.getTickFrequency()) + " seconds");
+
+                // TODO: sort array
+                Collections.sort(results, new ResultComparator());
+                Log.i(TAG, "processParallelVideo: Results' size: " + results.size());
+
+                // encode to video
+                for (int i = 0; i < results.size(); i++) {
+                    try {
+                        encoder.encodeImage(results.get(i).getBitmap());
+                    } catch (IOException e) {
+                        Log.e(TAG, "processParallelVideo: " + e.getMessage());
+                    }
+                }
+
+                try {
+                    encoder.finish();
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                }
+                NIOUtils.closeQuietly(out);
+                Log.i(TAG, "onReceive: Finished");
+
+                pbProgress.setVisibility(View.INVISIBLE);
+                vvResult.setVisibility(View.VISIBLE);
+                vvResult.setVideoPath(path);
+                vvResult.start();
+            }else{
+                int progress = (int)((ImageProcessorManager.results.size()/(ImageProcessorManager.inputCount * 1.0))*100);
+                Log.i(TAG, "onReceive: Update progress: size: " + ImageProcessorManager.results.size() + ", count: " + ImageProcessorManager.inputCount + ", percent: " + progress + "%");
+                pbProgress.setProgress(progress);
+
             }
-            NIOUtils.closeQuietly(out);
-            Log.i(TAG, "onReceive: Finished");
         }
     }
 
@@ -409,6 +462,8 @@ public class MainActivity extends AppCompatActivity {
         this.btnBrowseImage = findViewById(R.id.btnBrowseImage);
         this.btnBrowseVideo = findViewById(R.id.btnBrowseVideo);
         this.ivResult = findViewById(R.id.ivResult);
+        this.vvResult = findViewById(R.id.vvResult);
+        this.pbProgress = findViewById(R.id.pbProgress);
     }
 
     public void setListener(){
