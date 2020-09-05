@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.4.1)
 #endif()
 
 set(CMAKE_VERBOSE_MAKEFILE on)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -DANDROID_ARM_NEON=TRUE -mfpu=neon")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -DANDROID_ARM_NEON=TRUE -mfpu=neon")
 
 include_directories(/Users/2divide3/Documents/Dissertation/Application/Dissertation/app/src/main/jniIncludes)
 add_subdirectory(cpu_features)

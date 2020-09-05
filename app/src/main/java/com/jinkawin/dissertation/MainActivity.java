@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
@@ -118,13 +119,22 @@ public class MainActivity extends AppCompatActivity {
         vvResult.setVisibility(View.INVISIBLE);
         pbProgress.setVisibility(View.INVISIBLE);
 
+        NativeLib.neon();
+
 //        FileUtility fileUtility = new FileUtility(this);
 //
-//        MediaController mediaController = new MediaController(this);
-//        mediaController.setAnchorView(vvResult);
-//
+        MediaController mediaController = new MediaController(this);
+        mediaController.setAnchorView(vvResult);
+
+        vvResult.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                mp.setLooping(true);
+            }
+        });
+
 //        vvResult.setVideoPath(fileUtility.readAndCopyFile(R.raw.video_test, "video_test.mp4"));
-//        vvResult.setMediaController(mediaController);
+        vvResult.setMediaController(mediaController);
 //        vvResult.start();
 
 //        this.processNativeImage(R.raw.picturte_test, "picture_test.jpg");

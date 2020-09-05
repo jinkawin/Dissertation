@@ -13,6 +13,15 @@ string jstring2string(JNIEnv *env, jstring jStr);
 void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats);
 int64_t getTimeNsec();
 void cvInfo();
+void print_uint8 (uint8x16_t data);
+void add3 (uint8x16_t *data);
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_jinkawin_dissertation_NativeLib_neon(JNIEnv *env, jobject jObj){
+    Detector detector;
+    detector.determineDistanceNeon();
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Yes Neon");
+}
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlong matAddr, jstring weightPath, jstring configPath){
@@ -132,9 +141,3 @@ string jstring2string(JNIEnv *env, jstring _jString) {
     env->DeleteLocalRef(stringClass);
     return ret;
 }
-
-//extern "C" JNIEXPORT jstring JNICALL
-//Java_com_jinkawin_dissertation_NativeLib_helloWorld(JNIEnv *env, jobject jObj){
-//    Detector detector;
-//    return env->NewStringUTF(detector.helloWorld().c_str());
-//}

@@ -10,6 +10,10 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "arm_neon.h"
+
+#define TAG "Detector"
+
 using namespace cv;
 using namespace dnn;
 using namespace std;
@@ -112,6 +116,25 @@ public:
     string getConfig(){
         string modelName = (this->config.model == MODEL::YOLO)?"YOLO":"SSD";
         return "Model: " + modelName + ", Weight Path: " + this->config.pathWeight + ", Config Path: " + this->config.pathConfig;
+    }
+
+    void determineDistanceNeon(){
+        /* Create custom arbitrary data. */
+        const uint8_t uint8_data[] = { 1, 2, 3, 4, 5, 6, 7, 8,
+                                       9, 10, 11, 12, 13, 14, 15, 16 };
+
+        /* Create the vector with our data. */
+        uint8x16_t data;
+
+        /* Load our custom data into the vector register. */
+        data = vld1q_u8 (uint8_data);
+
+        print_uint8 (data);
+
+        /* Call of the add3 function. */
+        add3(&data);
+
+        print_uint8 (data);
     }
 
 private:
@@ -219,5 +242,31 @@ private:
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         return (int64_t) now.tv_sec*1000000000LL + now.tv_nsec;
+    }
+
+    void add3 (uint8x16_t *data) {
+        /* Set each sixteen values of the vector to 3.
+         *
+         * Remark: a 'q' suffix to intrinsics indicates
+         * the instruction run for 128 bits registers.
+         */
+        uint8x16_t three = vmovq_n_u8 (3);
+
+        /* Add 3 to the value given in argument. */
+        *data = vaddq_u8 (*data, three);
+    }
+
+    void print_uint8 (uint8x16_t data) {
+        int i;
+        static uint8_t p[16];
+        std::string outStr = "";
+
+        vst1q_u8 (p, data);
+
+        for (i = 0; i < 16; i++) {
+            outStr.append(to_string(p[i]));
+        }
+
+        __android_log_print(ANDROID_LOG_VERBOSE, TAG, "out: %s", outStr.c_str());
     }
 };
