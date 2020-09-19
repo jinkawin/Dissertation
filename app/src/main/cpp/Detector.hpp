@@ -77,9 +77,6 @@ public:
         int rowNum = frame.rows;
         int colNum = frame.cols;
 
-        // Resize Frame
-//        this->resizeFrame(frame, this->WIDTH);
-
         // Convert Colour
         int colour = (this->config.model == YOLO)?this->COLOUR_YOLO:this->COLOUR_SSD;
         cvtColor(frame, frame, colour);
@@ -144,12 +141,14 @@ private:
         vector<float> confidences;
         vector<int> indices;
 
+        // Reshape the detection Mat
         detection = detection.reshape(1, detection.total()/7);
 
         for (int i = 0; i < detection.rows; i++){
             int classId = (int)(detection.at<float>(i, 1));
             float confidence = detection.at<float>(i, 2);
 
+            // If the detected object is human
             if(confidence > CONFIDENCE_THRESHOLD_SSD && classId == PERSON){
 
                 // Get detected object's location
@@ -158,6 +157,7 @@ private:
                 int right = (int)(detection.at<float>(i, 5) * frame.cols);
                 int bottom = (int)(detection.at<float>(i, 6) * frame.rows);
 
+                // Add to vector
                 confidences.push_back(confidence);
                 Rect _rect = Rect(Point(left, top), Point(right, bottom));
                 boxes.push_back(_rect);
@@ -189,7 +189,7 @@ private:
     void determineDistance(vector<Box> nmsBoxes, Mat frame){
         bool statuses[nmsBoxes.size()];
 
-        // Compair
+        // Compair distance between human
         for (size_t i=0; i<nmsBoxes.size(); i++){
             for (size_t j=i+1; j<nmsBoxes.size(); j++){
                 bool status = this->checkDistance(Point(nmsBoxes[i].centreX, nmsBoxes[i].centreY), Point(nmsBoxes[j].centreX, nmsBoxes[j].centreY));
@@ -198,6 +198,7 @@ private:
             }
         }
 
+        // Draw regtangle over the detected object
         for (size_t i = 0; i < nmsBoxes.size(); i++){
             Scalar colour = statuses[i]?COLOUR_RED:COLOUR_GREEN;
             rectangle(frame, nmsBoxes[i].rect, colour);
@@ -223,8 +224,6 @@ private:
             default:
                 break;
         }
-
-//        this->network.setPreferableTarget(DNN_TARGET_OPENCL_FP16);
     }
 
     bool checkDistance(Point a, Point b){

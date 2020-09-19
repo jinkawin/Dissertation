@@ -28,8 +28,6 @@ Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlon
     Detector detector;
     ModelConfig config;
 
-    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Hello Log");
-
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "WeightPath: %s", env->GetStringUTFChars(weightPath, 0));
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "ConfigPath: %s", env->GetStringUTFChars(configPath, 0));
 
@@ -37,14 +35,15 @@ Java_com_jinkawin_dissertation_NativeLib_process(JNIEnv *env, jobject jObj, jlon
     string stringWeightPath = jstring2string(env, weightPath);
     string stringConfigPath = jstring2string(env, configPath);
 
+    // Setup Model
     config.model = MODEL::SSD;
     config.pathWeight = stringWeightPath;
     config.pathConfig = stringConfigPath;
     detector.setModelConfig(config);
 
+    // Convert address to Mat and process
     Mat &frame = *(Mat *) matAddr;
     detector.process(frame);
-
 
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Mat Cols: %d", frame.cols);
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Mat Rows: %d", frame.rows);
@@ -59,15 +58,19 @@ Java_com_jinkawin_dissertation_NativeLib_videoProcess(JNIEnv *env, jobject jObj,
     string stringWeightPath = jstring2string(env, weightPath);
     string stringConfigPath = jstring2string(env, configPath);
 
+    // Setup Model
     config.model = MODEL::SSD;
     config.pathWeight = stringWeightPath;
     config.pathConfig = stringConfigPath;
     detector.setModelConfig(config);
 
+    // Get address from jArray
     jsize size = env->GetArrayLength(matAddrs);
     jlong *value = env->GetLongArrayElements(matAddrs, 0);
 
     int64 start = cv::getTickCount();
+
+    // Convert each address to Mat
     for (int i = 0; i < size; i++) {
         Mat &frame = *(Mat *) value[i];
         detector.process(frame);
@@ -85,14 +88,17 @@ Java_com_jinkawin_dissertation_NativeLib_parallelProcess(JNIEnv *env, jobject jO
     string stringWeightPath = jstring2string(env, weightPath);
     string stringConfigPath = jstring2string(env, configPath);
 
+    // Setup Model
     config.model = MODEL::SSD;
     config.pathWeight = stringWeightPath;
     config.pathConfig = stringConfigPath;
 
+    // Get address from jArray
     jsize size = env->GetArrayLength(matAddrs);
     jlong *value = env->GetLongArrayElements(matAddrs, 0);
 
     int64 start = cv::getTickCount();
+    // Parallel Calculation
     cv::parallel_for_(cv::Range(0, NUMBER_OF_THREADS), Parallel_process(config, matAddrs, NUMBER_OF_THREADS, size, value));
     float diff = (cv::getTickCount() - start)/cv::getTickFrequency();
     __android_log_print(ANDROID_LOG_VERBOSE, "NativeLib", "Total: %lf: ", diff);
@@ -110,6 +116,7 @@ Java_com_jinkawin_dissertation_NativeLib_getInfo(JNIEnv *env, jobject jObj){
 
 }
 
+// Convert Array to Vector
 void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats){
     jsize size = env->GetArrayLength(matAddrs);
     jlong *value = env->GetLongArrayElements(matAddrs, 0);
@@ -121,6 +128,8 @@ void arrayToVector(JNIEnv *env, jlongArray matAddrs, vector<Mat> &mats){
     }
 }
 
+
+// Convert jString to String
 string jstring2string(JNIEnv *env, jstring _jString) {
 
     // If jString is empty
