@@ -89,6 +89,7 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         // Setup ImageProcessor
         ImageProcessorManager.setProcessor(this, ModelSetup.weightPath, ModelSetup.configPath, true);
 
+        // Initial Camera
         cbvCamera = findViewById(R.id.cbvCamera);
         cbvCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
         cbvCamera.setCvCameraViewListener(this);
@@ -114,8 +115,8 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
             // Set time of the lastest processed image
             lastTime = Core.getCPUTickCount();
 
+            // Process in parallel
             processParallelVideo(mat);
-//            mat = ModelSetup.imageProcessor.process(mat);
 
             Log.i(TAG, "onCameraFrame: Processing Image");
         }
@@ -181,6 +182,8 @@ public class CameraActivity extends org.opencv.android.CameraActivity implements
         Size newSize = new Size(ModelSetup.WIDTH, ogSize.height/ratio);
 
         Log.i(TAG, "processParallelVideo: process order: " + order++);
+
+        // Process
         ImageProcessorManager.process(frame, newSize, order++, this.modelType);
     }
 }

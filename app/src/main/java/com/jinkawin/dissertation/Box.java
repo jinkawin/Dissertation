@@ -34,8 +34,6 @@ public class Box {
 
     public int getX(){ return this.x; }
     public int getY(){ return this.y; }
-//    public int getCentreX() { return this.centreX; }
-//    public int getCentreY() { return this.centreY; }
     public int getWidth() { return this.width; }
     public int getHeight() { return this.height; }
     public Point getPoint(){ return new Point(this.centreX, this.centreY); }
@@ -43,24 +41,6 @@ public class Box {
     public Rect2d getRect2d(){
         return new Rect2d(this.centreX, this.centreY, this.width, this.height);
     }
-
-//    public void setCentreX(double centreX) {
-//        this.centreX = (int)(centreX * frame.getWidth());
-//        this.x = (int)(this.centreX - (this.width / 2.0));
-//    }
-//
-//    public void setCentreY(double centreY) {
-//        this.centreY = (int)(centreY * frame.getHeight());
-//        this.y = (int)(this.centreY - (this.width / 2.0));
-//    }
-//
-//    public void setWidth(double width) {
-//        this.width = (int)(width * frame.getWidth());
-//    }
-//
-//    public void setHeight(double height) {
-//        this.height = (int)(height * frame.getHeight());
-//    }
 
     @NonNull
     @Override

@@ -30,9 +30,6 @@ public class ImageProcessorRunnable implements Runnable{
         // Get target frame
         Mat frame = taskProcessorMethods.getFrame();
 
-        // Resize image
-//        Imgproc.resize(frame, frame, taskProcessorMethods.getSize());
-
         frame = imageProcessor.process(frame);
 
         taskProcessorMethods.setFrame(frame);
@@ -42,10 +39,5 @@ public class ImageProcessorRunnable implements Runnable{
 
         // Send information back to the manager
         taskProcessorMethods.handleProcessState(ProcessStatus.SUCCESS);
-
-//        Log.i(TAG, "run: index " + taskProcessorMethods.getIndex() + " is finished");
-
-        // Free thread storage
-//        taskProcessorMethods.setThread(null);
     }
 }

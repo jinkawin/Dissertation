@@ -359,6 +359,7 @@ public class ImageProcessor {
 
         detection = detection.reshape(1, (int)detection.total() / 7);
 
+        // For each detection
         for (int i = 0; i < detection.rows(); i++) {
             double confidence = detection.get(i, 2)[0];
             int classId = (int)detection.get(i, 1)[0];
@@ -380,6 +381,7 @@ public class ImageProcessor {
                         _rect.height
                 );
 
+                // Add box
                 boxes.add(box);
                 outline.add(box.getRect2d());
                 confidences.add((float)confidence);
@@ -390,6 +392,7 @@ public class ImageProcessor {
         matOfRect2d.fromList(outline);
         matOfFloat.fromList(confidences);
 
+        // NMS Box
         Dnn.NMSBoxes(matOfRect2d, matOfFloat, SCORE_THRESHOLD_SSD, NMS_THRESHOLD, indices);
 
         ArrayList<Box> nmsBoxes = new ArrayList<>();
